@@ -167,3 +167,6 @@ group_config/
 # local dev
 local/
 *legacy*
+
+# pycharm
+.idea/

@@ -359,6 +359,11 @@ def get_network(network_config):
         bn = BN_layer(AttnBasicBlock, 2)
         decoder = De_ResNet18_256x256()
         net = {'encoder': encoder, 'bn': bn, 'decoder': decoder}
+    elif network_config.name == 'nflow':
+        from .nflow import get_normalizing_flow
+        backbone = get_network(network_config.backbone)
+        nflow_net = get_normalizing_flow(network_config.nflow)
+        net = {'nflow': nflow_net, 'backbone': backbone}
     else:
         raise Exception('Unexpected Network Architecture!')
 

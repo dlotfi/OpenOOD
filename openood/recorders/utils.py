@@ -8,6 +8,7 @@ from .cutpaste_recorder import CutpasteRecorder
 from .draem_recorder import DRAEMRecorder
 from .dsvdd_recorder import DCAERecorder, DSVDDRecorder
 from .kdad_recorder import KdadRecorder
+from .nflow_recorder import NormalizingFlowRecorder
 from .opengan_recorder import OpenGanRecorder
 from .rd4ad_recorder import Rd4adRecorder
 from .palm_recorder import PALMRecorder
@@ -27,6 +28,7 @@ def get_recorder(config: Config):
         'ad': ADRecorder,
         'rd4ad': Rd4adRecorder,
         'palm': PALMRecorder,
+        'nflow': NormalizingFlowRecorder,
     }
 
     return recorders[config.recorder.name](config)

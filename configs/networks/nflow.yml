@@ -1,0 +1,23 @@
+network:
+  name: nflow
+  num_classes: '@{dataset.num_classes}'
+  image_size: '@{dataset.image_size}'
+  pretrained: False
+  checkpoint: none           # ignore if pretrained is false
+  num_gpus: '@{num_gpus}'
+
+  # normalizing flow network
+  nflow:
+    # The size of the latent space
+    latent_size: 512
+    # Number of flows
+    n_flows: 4
+
+  # network used for feature extraction
+  backbone:
+    name: resnet18_32x32
+    num_classes: '@{dataset.num_classes}'
+    image_size: '@{dataset.image_size}'
+    pretrained: False
+    checkpoint: none
+    num_gpus: '@{num_gpus}'

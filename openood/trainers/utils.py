@@ -20,6 +20,7 @@ from .logitnorm_trainer import LogitNormTrainer
 from .mcd_trainer import MCDTrainer
 from .mixup_trainer import MixupTrainer
 from .mos_trainer import MOSTrainer
+from .nflow_trainer import NormalizingFlowTrainer
 from .npos_trainer import NPOSTrainer
 from .oe_trainer import OETrainer
 from .opengan_trainer import OpenGanTrainer
@@ -72,6 +73,7 @@ def get_trainer(net, train_loader: DataLoader, val_loader: DataLoader,
             'palm': PALMTrainer,
             't2fnorm': T2FNormTrainer,
             'reweightood': ReweightOODTrainer,
+            'nflow': NormalizingFlowTrainer,
         }
         if config.trainer.name in ['cider', 'npos']:
             return trainers[config.trainer.name](net, train_loader, val_loader,
