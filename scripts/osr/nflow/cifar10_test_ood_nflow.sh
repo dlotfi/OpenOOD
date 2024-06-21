@@ -14,5 +14,5 @@ python main.py \
     configs/postprocessors/nflow.yml \
     --num_workers 8 \
     --network.backbone.pretrained True \
-    --network.backbone.checkpoint ./results/cifar10_resnet18_32x32_base_e100_lr0.1_default/s${SEED}/best.ckpt \
+    --network.backbone.checkpoint "./results/cifar10_resnet18_32x32_base_e100_lr0.1_default/s${SEED}/best.ckpt" \
     --seed ${SEED}

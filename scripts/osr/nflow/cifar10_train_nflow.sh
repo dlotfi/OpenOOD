@@ -20,7 +20,7 @@ python main.py \
     configs/pipelines/train/train_nflow.yml \
     configs/preprocessors/base_preprocessor.yml \
     configs/postprocessors/nflow.yml \
-    --dataset.feat_root ./results/cifar10_resnet18_32x32_feat_extract_nflow_default/s${SEED} \
+    --dataset.feat_root "./results/cifar10_resnet18_32x32_feat_extract_nflow_default/s${SEED}" \
     --network.backbone.pretrained True \
-    --network.backbone.checkpoint ./results/cifar10_resnet18_32x32_base_e100_lr0.1_default/s${SEED}/best.ckpt \
+    --network.backbone.checkpoint "./results/cifar10_resnet18_32x32_base_e100_lr0.1_default/s${SEED}/best.ckpt" \
     --seed ${SEED}
