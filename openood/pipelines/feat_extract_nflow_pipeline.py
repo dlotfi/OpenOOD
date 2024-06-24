@@ -54,13 +54,13 @@ class FeatExtractNormalizingFlowPipeline:
         evaluator.extract(net['backbone'], id_loader_dict['test'],
                           self.config.dataset.name)
         evaluator.extract(full_net, id_loader_dict['test'],
-                          f'{self.config.dataset.name}_norm')
+                          f'{self.config.dataset.name}_flow')
         split_types = ['nearood', 'farood']
         for ood_split in split_types:
             for dataset_name, ood_dl in ood_loader_dict[ood_split].items():
                 print(f'\t OOD {ood_split}/{dataset_name} data...')
                 evaluator.extract(net['backbone'], ood_dl, dataset_name)
-                evaluator.extract(full_net, ood_dl, f'{dataset_name}_norm')
+                evaluator.extract(full_net, ood_dl, f'{dataset_name}_flow')
         print('\nComplete Feature Extraction!')
 
     def run(self):

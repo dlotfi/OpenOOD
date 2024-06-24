@@ -19,7 +19,7 @@ setuptools.setup(
         'matplotlib', 'scipy', 'tqdm', 'pyyaml>=5.4.1', 'pre-commit',
         'opencv-python>=4.4.0.46', 'imgaug>=0.4.0', 'pandas', 'diffdist>=0.1',
         'Cython>=0.29.30', 'faiss-gpu>=1.7.2', 'gdown>=4.7.1', 'libmr>=0.1.9',
-        'normflows>=1.7.3'
+        'normflows>=1.7.3', 'SciencePlots>=2.1.1'
     ],
     classifiers=[
         'Programming Language :: Python :: 3',
