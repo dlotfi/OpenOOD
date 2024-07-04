@@ -8,6 +8,7 @@ seed: 0
 dataset:
   # cached features extracted from classifier
   feat_root: './results/cifar10_resnet18_32x32_feat_extract_nflow_default/s0'
+#  normalize_feat: True
 
 num_gpus: 1
 num_workers: 8

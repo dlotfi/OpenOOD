@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 
-from openood.datasets import get_feature_opengan_dataloader
+from openood.datasets import get_feature_nflow_dataloader
 from openood.evaluators import get_evaluator
 from openood.networks import get_network
 from openood.postprocessors import get_postprocessor
@@ -23,7 +23,7 @@ class TrainNormalizingFlowPipeline:
         np.random.seed(self.config.seed)
 
         # get dataloader
-        dataloaders = get_feature_opengan_dataloader(self.config.dataset)
+        dataloaders = get_feature_nflow_dataloader(self.config.dataset)
         id_loaders = {
             'train': dataloaders['id_train'],
             'val': dataloaders['id_val']

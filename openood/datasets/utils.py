@@ -8,10 +8,9 @@ from openood.preprocessors.utils import get_preprocessor
 from openood.utils.config import Config
 
 from .feature_dataset import FeatDataset
-from .imglist_dataset import ImglistDataset
 from .imglist_augmix_dataset import ImglistAugMixDataset
-from .imglist_extradata_dataset import ImglistExtraDataDataset, TwoSourceSampler
-from .udg_dataset import UDGDataset
+from .imglist_extradata_dataset import (ImglistExtraDataDataset,
+                                        TwoSourceSampler)
 
 
 def get_dataloader(config: Config):
@@ -167,6 +166,42 @@ def get_feature_opengan_dataloader(dataset_config: Config):
                            allow_pickle=True)
         total_feat = torch.from_numpy(loaded_data['feat_list'])
         total_labels = loaded_data['label_list']
+        del loaded_data
+        # reshape the vector to fit in to the network
+        total_feat.unsqueeze_(-1).unsqueeze_(-1)
+        # let's see what we got here should be something like:
+        # torch.Size([total_num, channel_size, 1, 1])
+        print('Loaded feature size: {}'.format(total_feat.shape))
+
+        if d == 'id_train':
+            split_config = dataset_config['train']
+        else:
+            split_config = dataset_config['val']
+
+        dataset = FeatDataset(feat=total_feat, labels=total_labels)
+        dataloader = DataLoader(dataset,
+                                batch_size=split_config.batch_size,
+                                shuffle=split_config.shuffle,
+                                num_workers=dataset_config.num_workers)
+        dataloader_dict[d] = dataloader
+
+    return dataloader_dict
+
+
+def get_feature_nflow_dataloader(dataset_config: Config):
+    feat_root = dataset_config.feat_root
+
+    dataloader_dict = {}
+    for d in ['id_train', 'id_val', 'ood_val']:
+        # load in the cached feature
+        loaded_data = load(os.path.join(feat_root, f'{d}.npz'),
+                           allow_pickle=True)
+        total_feat = torch.from_numpy(loaded_data['feat_list'])
+        # if dataset_config.normalize_feat:
+        #     total_feat = total_feat / total_feat.norm(dim=1, keepdim=True)
+        total_labels = loaded_data['label_list']
+        if torch.isnan(total_feat).any() or torch.isinf(total_feat).any():
+            print('NaN or Inf detected in the feature')
         del loaded_data
         # reshape the vector to fit in to the network
         total_feat.unsqueeze_(-1).unsqueeze_(-1)
