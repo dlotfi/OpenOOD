@@ -5,7 +5,8 @@ from typing import List, Dict
 
 import numpy as np
 import scienceplots
-from matplotlib import pyplot as plt
+import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
 from numpy import array
 from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
@@ -110,12 +111,14 @@ def plot_spectrum(score_dir: str, out_dir: str, use_log=False):
     plt.savefig(f'{out_dir}/spectrum.png', bbox_inches='tight')
 
 
-def load_features(feat_dir: str,
-                  datasets: List[str],
+def load_features(datasets: List[str],
+                  feat_dir: str,
+                  score_dir: str = None,
                   n_samples: int = None,
                   sample_rate: float = 1):
     feat_list = []
     feat_flow_list = []
+    score_list = []
     # Calculate total number of samples across all datasets
     total_samples = sum([
         len(np.load(f'{feat_dir}/{dataset}.npz')['feat_list'])
@@ -134,10 +137,20 @@ def load_features(feat_dir: str,
                                         n_samples_dataset,
                                         replace=False)
         feat_list.extend(features[index_select])
+
         features = np.load(f'{feat_dir}/{dataset}_flow.npz')['feat_list']
         feat_flow_list.extend(features[index_select])
+
+        if score_dir is not None:
+            feature_dict = np.load(f'{score_dir}/{dataset}.npz')
+            score_list.extend(feature_dict['conf'][index_select])
+
     feat_list = np.array(feat_list)
     feat_flow_list = np.array(feat_flow_list)
+    if score_dir is not None:
+        score_list = np.array(score_list)
+        return feat_list, feat_flow_list, score_list
+
     return feat_list, feat_flow_list
 
 
@@ -159,11 +172,15 @@ def draw_tsne_plot(feats_dict, title, output_path):
 def plot_tsne(feat_dir: str, out_dir: str, merge_plots=False):
     feat_dir = os.path.normpath(feat_dir)
     out_dir = os.path.normpath(out_dir)
-    id_feats, id_feats_flow = load_features(feat_dir, id_datasets, 1000)
-    nearood_feats, nearood_feats_flow = load_features(feat_dir,
-                                                      nearood_datasets, 1000)
-    farood_feats, farood_feats_flow = load_features(feat_dir, farood_datasets,
-                                                    1000)
+    id_feats, id_feats_flow = load_features(id_datasets,
+                                            feat_dir,
+                                            n_samples=1000)
+    nearood_feats, nearood_feats_flow = load_features(nearood_datasets,
+                                                      feat_dir,
+                                                      n_samples=1000)
+    farood_feats, farood_feats_flow = load_features(farood_datasets,
+                                                    feat_dir,
+                                                    n_samples=1000)
 
     feats_dict = {
         'farood': farood_feats,
@@ -192,6 +209,71 @@ def plot_tsne(feat_dir: str, out_dir: str, merge_plots=False):
             f'{out_dir}/tsne_features_flow.png')
 
 
+def plot_tsne_score(feat_dir: str, score_dir: str, out_dir: str):
+    feat_dir = os.path.normpath(feat_dir)
+    out_dir = os.path.normpath(out_dir)
+    id_feats, _, id_scores = load_features(id_datasets,
+                                           feat_dir,
+                                           score_dir,
+                                           n_samples=1000)
+    nearood_feats, _, nearood_scores = load_features(nearood_datasets,
+                                                     feat_dir,
+                                                     score_dir,
+                                                     n_samples=1000)
+    farood_feats, _, farood_scores = load_features(farood_datasets,
+                                                   feat_dir,
+                                                   score_dir,
+                                                   n_samples=1000)
+    feats_dict = {
+        'farood': farood_feats,
+        'nearood': nearood_feats,
+        'id': id_feats,
+    }
+    scores_dict = {
+        'farood': farood_scores,
+        'nearood': nearood_scores,
+        'id': id_scores,
+    }
+
+    print('Plotting t-SNE for features', flush=True)
+
+    plt.figure(figsize=(10, 8), dpi=300)
+    tsne_feats_dict = tsne_compute(feats_dict)
+    all_scores = np.concatenate(
+        [scores for key, scores in scores_dict.items() if key != 'id'])
+    markers = {'farood': 's', 'nearood': '^', 'id': 'o'}
+    cmap = plt.cm.rainbow
+    norm = mcolors.Normalize(vmin=all_scores.min(), vmax=all_scores.max())
+    for i, (key, tsne_feats) in enumerate(tsne_feats_dict.items()):
+        scores = scores_dict[key]
+        if key == 'id':
+            plt.scatter(tsne_feats[:, 0],
+                        tsne_feats[:, 1],
+                        s=10,
+                        alpha=0.2,
+                        marker=markers[key],
+                        label=labels[key],
+                        c='grey')
+        else:
+            plt.scatter(tsne_feats[:, 0],
+                        tsne_feats[:, 1],
+                        s=10,
+                        alpha=0.5,
+                        marker=markers[key],
+                        label=labels[key],
+                        c=scores,
+                        cmap=cmap,
+                        norm=norm)
+    plt.colorbar(mappable=plt.cm.ScalarMappable(norm=norm, cmap=cmap),
+                 ax=plt.gca())
+    plt.axis('off')
+    legend = plt.legend(loc='upper left')
+    for handle in legend.legend_handles:
+        handle.set_color('black')
+    plt.title('t-SNE for Backbone Features of ID and OOD Samples')
+    plt.savefig(f'{out_dir}/tsne_features_scores.png', bbox_inches='tight')
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--score_dir',
@@ -213,4 +295,5 @@ if __name__ == '__main__':
     np.random.seed(opt.seed)
     # draw plots
     plot_spectrum(opt.score_dir, opt.out_dir)
-    plot_tsne(opt.feat_dir, opt.out_dir, True)
+    plot_tsne(opt.feat_dir, opt.out_dir)
+    plot_tsne_score(opt.feat_dir, opt.score_dir, opt.out_dir)
