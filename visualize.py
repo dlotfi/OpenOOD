@@ -12,27 +12,34 @@ from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
 from sklearn.preprocessing import StandardScaler
 
+from openood.utils import Config
+from openood.utils.config import merge_configs
+
 __all__ = ('scienceplots', )
 plt.style.use(['science', 'no-latex'])
 
-id_datasets = ['cifar10']
-# csid_datasets = ['cifar10c', 'imagenet10']
-nearood_datasets = ['cifar100', 'tin']
-farood_datasets = ['mnist', 'svhn', 'texture', 'place365']
 
-labels = {
-    'nearood': 'Near OOD',
-    'farood': 'Far OOD',
-    'csid': 'Covariate-Shift ID',
-    'id': 'ID',
-    'flow_id': 'Flow ID',
-    'flow_farood': 'Flow Far OOD',
-    'flow_nearood': 'Flow Near OOD',
-}
+def get_label(split_name: str, datasets: List[str] = None):
+    labels = {
+        'nearood': 'Near OOD',
+        'farood': 'Far OOD',
+        'csid': 'Covariate-Shift ID',
+        'id': 'ID',
+        'flow_id': 'Flow ID',
+        'flow_farood': 'Flow Far OOD',
+        'flow_nearood': 'Flow Near OOD',
+    }
+    label = labels[split_name]
+    if datasets is not None:
+        label += f' ({", ".join(datasets)})'
+    return label
 
 
-def remove_outliers(data, m=3):
-    return data[abs(data - np.mean(data)) < m * np.std(data)]
+def remove_outliers(scores, features=None, m=3):
+    keep_indices = abs(scores - np.mean(scores)) < m * np.std(scores)
+    if features is not None:
+        return scores[keep_indices], features[keep_indices]
+    return scores[keep_indices]
 
 
 def tsne_compute(feats_dict: Dict[str, array], n_components=50):
@@ -75,17 +82,17 @@ def load_scores(score_dir: str, datasets: List[str], use_log: bool):
     return score_list
 
 
-def plot_spectrum(score_dir: str, out_dir: str, use_log=False):
+def plot_spectrum(datasets: dict, score_dir: str, out_dir: str, use_log=False):
     score_dir = os.path.normpath(score_dir)
     out_dir = os.path.normpath(out_dir)
-    id_scores = load_scores(score_dir, id_datasets, use_log)
-    # csid_scores = load_scores(score_dir, csid_datasets, use_log)
-    nearood_scores = load_scores(score_dir, nearood_datasets, use_log)
-    farood_scores = load_scores(score_dir, farood_datasets, use_log)
+    id_scores = load_scores(score_dir, datasets['id'], use_log)
+    # csid_scores = load_scores(score_dir, datasets['csid'], use_log)
+    nearood_scores = load_scores(score_dir, datasets['nearood'], use_log)
+    farood_scores = load_scores(score_dir, datasets['farood'], use_log)
 
     # csid_scores = remove_outliers(csid_scores, m=3)
-    nearood_scores = remove_outliers(nearood_scores, m=2)
-    farood_scores = remove_outliers(farood_scores, m=1)
+    nearood_scores = remove_outliers(nearood_scores, m=3)
+    farood_scores = remove_outliers(farood_scores, m=2)
 
     scores_dict = {
         'farood': farood_scores,
@@ -103,10 +110,10 @@ def plot_spectrum(score_dir: str, out_dir: str, use_log=False):
                  density=True,
                  weights=np.ones(len(scores)) / len(scores),
                  alpha=0.5,
-                 label=labels[key])
+                 label=get_label(key, datasets[key]))
 
     plt.yticks([])
-    plt.legend(loc='upper left')
+    plt.legend(loc='upper left', fontsize='small')
     plt.title('Log-Likelihood for ID and OOD Samples')
     plt.savefig(f'{out_dir}/spectrum.png', bbox_inches='tight')
 
@@ -154,7 +161,7 @@ def load_features(datasets: List[str],
     return feat_list, feat_flow_list
 
 
-def draw_tsne_plot(feats_dict, title, output_path):
+def draw_tsne_plot(feats_dict, title, output_path, datasets):
     plt.figure(figsize=(8, 8), dpi=300)
     tsne_feats_dict = tsne_compute(feats_dict)
     for key, tsne_feats in tsne_feats_dict.items():
@@ -162,23 +169,23 @@ def draw_tsne_plot(feats_dict, title, output_path):
                     tsne_feats[:, 1],
                     s=10,
                     alpha=0.5,
-                    label=labels[key])
+                    label=get_label(key, datasets.get(key, None)))
     plt.axis('off')
-    plt.legend(loc='upper left')
+    plt.legend(loc='upper left', fontsize='small')
     plt.title(title)
     plt.savefig(output_path, bbox_inches='tight')
 
 
-def plot_tsne(feat_dir: str, out_dir: str, merge_plots=False):
+def plot_tsne(datasets: dict, feat_dir: str, out_dir: str, merge_plots=False):
     feat_dir = os.path.normpath(feat_dir)
     out_dir = os.path.normpath(out_dir)
-    id_feats, id_feats_flow = load_features(id_datasets,
+    id_feats, id_feats_flow = load_features(datasets['id'],
                                             feat_dir,
                                             n_samples=1000)
-    nearood_feats, nearood_feats_flow = load_features(nearood_datasets,
+    nearood_feats, nearood_feats_flow = load_features(datasets['nearood'],
                                                       feat_dir,
                                                       n_samples=1000)
-    farood_feats, farood_feats_flow = load_features(farood_datasets,
+    farood_feats, farood_feats_flow = load_features(datasets['farood'],
                                                     feat_dir,
                                                     n_samples=1000)
 
@@ -198,32 +205,41 @@ def plot_tsne(feat_dir: str, out_dir: str, merge_plots=False):
         feats_dict.update({('flow_' + k): v
                            for k, v in feats_flow_dict.items()})
         draw_tsne_plot(feats_dict, 't-SNE for Features of ID and OOD Samples',
-                       f'{out_dir}/tsne_features_all.png')
+                       f'{out_dir}/tsne_features_all.png', datasets)
     else:
         draw_tsne_plot(feats_dict,
                        't-SNE for Backbone Features of ID and OOD Samples',
-                       f'{out_dir}/tsne_features.png')
+                       f'{out_dir}/tsne_features.png', datasets)
         draw_tsne_plot(
             feats_flow_dict,
             't-SNE for Normalizing Flow Features of ID and OOD Samples',
-            f'{out_dir}/tsne_features_flow.png')
+            f'{out_dir}/tsne_features_flow.png', datasets)
 
 
-def plot_tsne_score(feat_dir: str, score_dir: str, out_dir: str):
+def plot_tsne_score(datasets: dict, feat_dir: str, score_dir: str,
+                    out_dir: str):
     feat_dir = os.path.normpath(feat_dir)
     out_dir = os.path.normpath(out_dir)
-    id_feats, _, id_scores = load_features(id_datasets,
+    id_feats, _, id_scores = load_features(datasets['id'],
                                            feat_dir,
                                            score_dir,
                                            n_samples=1000)
-    nearood_feats, _, nearood_scores = load_features(nearood_datasets,
+    nearood_feats, _, nearood_scores = load_features(datasets['nearood'],
                                                      feat_dir,
                                                      score_dir,
                                                      n_samples=1000)
-    farood_feats, _, farood_scores = load_features(farood_datasets,
+    farood_feats, _, farood_scores = load_features(datasets['farood'],
                                                    feat_dir,
                                                    score_dir,
                                                    n_samples=1000)
+
+    nearood_scores, nearood_feats = remove_outliers(nearood_scores,
+                                                    nearood_feats,
+                                                    m=3)
+    farood_scores, farood_feats = remove_outliers(farood_scores,
+                                                  farood_feats,
+                                                  m=2)
+
     feats_dict = {
         'farood': farood_feats,
         'nearood': nearood_feats,
@@ -252,7 +268,7 @@ def plot_tsne_score(feat_dir: str, score_dir: str, out_dir: str):
                         s=10,
                         alpha=0.2,
                         marker=markers[key],
-                        label=labels[key],
+                        label=get_label(key, datasets[key]),
                         c='grey')
         else:
             plt.scatter(tsne_feats[:, 0],
@@ -260,14 +276,14 @@ def plot_tsne_score(feat_dir: str, score_dir: str, out_dir: str):
                         s=10,
                         alpha=0.5,
                         marker=markers[key],
-                        label=labels[key],
+                        label=get_label(key, datasets[key]),
                         c=scores,
                         cmap=cmap,
                         norm=norm)
     plt.colorbar(mappable=plt.cm.ScalarMappable(norm=norm, cmap=cmap),
                  ax=plt.gca())
     plt.axis('off')
-    legend = plt.legend(loc='upper left')
+    legend = plt.legend(loc='upper left', fontsize='small')
     for handle in legend.legend_handles:
         handle.set_color('black')
     plt.title('t-SNE for Backbone Features of ID and OOD Samples')
@@ -276,6 +292,7 @@ def plot_tsne_score(feat_dir: str, score_dir: str, out_dir: str):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
+    parser.add_argument('--config', dest='config', nargs='+', required=True)
     parser.add_argument('--score_dir',
                         help='path to the scores directory',
                         required=True)
@@ -290,10 +307,17 @@ if __name__ == '__main__':
                         default=0,
                         help='Seed for random number generation',
                         required=False)
-    opt = parser.parse_args()
+    opt, unknown_args = parser.parse_known_args()
+    config = merge_configs(*[Config(path) for path in opt.config])
     # set random seed
     np.random.seed(opt.seed)
     # draw plots
-    plot_spectrum(opt.score_dir, opt.out_dir)
-    plot_tsne(opt.feat_dir, opt.out_dir)
-    plot_tsne_score(opt.feat_dir, opt.score_dir, opt.out_dir)
+    datasets = {
+        # 'csid_datasets': config.ood_dataset.nearood.datasets,
+        'farood': config.ood_dataset.farood.datasets,
+        'nearood': config.ood_dataset.nearood.datasets,
+        'id': [config.dataset.name]
+    }
+    plot_spectrum(datasets, opt.score_dir, opt.out_dir)
+    plot_tsne(datasets, opt.feat_dir, opt.out_dir)
+    plot_tsne_score(datasets, opt.feat_dir, opt.score_dir, opt.out_dir)
