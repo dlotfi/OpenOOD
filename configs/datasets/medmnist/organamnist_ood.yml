@@ -44,14 +44,14 @@ ood_dataset:
       data_dir: ./data/medmnist/
       imglist_pth: ./data/benchmark_imglist/medmnist/test_bloodmnist.txt
     mnist:
-      data_dir: ./data/images/
+      data_dir: ./data/images_classic/
       imglist_pth: ./data/benchmark_imglist/medmnist/test_mnist.txt
     cifar10:
-      data_dir: ./data/images/
+      data_dir: ./data/images_classic/
       imglist_pth: ./data/benchmark_imglist/medmnist/test_cifar10.txt
     texture:
-      data_dir: ./data/images/
+      data_dir: ./data/images_classic/
       imglist_pth: ./data/benchmark_imglist/medmnist/test_texture.txt
     tin:
-      data_dir: ./data/images/
+      data_dir: ./data/images_classic/
       imglist_pth: ./data/benchmark_imglist/medmnist/test_tin.txt

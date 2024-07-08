@@ -12,13 +12,14 @@ machine_rank: 0
 
 network:
   pretrained: True
-  checkpoint: ["results/cifar10_nflow_nflow_e100_lr0.0001_default/s0/best_nflow.ckpt",
+  checkpoint: ["results/organamnist_nflow_nflow_e100_lr0.0001_default/s0/best_nflow.ckpt",
                null]
 
   # load checkpoint for feature extraction network
   backbone:
     pretrained: True
     checkpoint: "./results/cifar10_resnet18_32x32_base_e100_lr0.1_default/s0/best.ckpt"
+    checkpoint_key: none
 
 pipeline:
   name: test_ood
