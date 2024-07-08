@@ -1,0 +1,8 @@
+network:
+  name: resnet18_28x28
+  num_classes: '@{dataset.num_classes}'
+  num_channels: '@{dataset.num_channels}'
+  pretrained: False          # set 'True' to load pretrained model
+  checkpoint: ./results/medmnist_best.ckpt            # ignore if pretrained is false
+  checkpoint_key: none
+  num_gpus: '@{num_gpus}'

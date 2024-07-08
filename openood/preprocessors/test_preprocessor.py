@@ -11,7 +11,7 @@ class TestStandardPreProcessor(BasePreprocessor):
     def __init__(self, config: Config):
         super(TestStandardPreProcessor, self).__init__(config)
         self.transform = tvs_trans.Compose([
-            Convert('RGB'),
+            Convert(('RGB', 'L')[config.dataset.num_channels == 1]),
             tvs_trans.Resize(self.pre_size, interpolation=self.interpolation),
             tvs_trans.CenterCrop(self.image_size),
             tvs_trans.ToTensor(),

@@ -8,9 +8,16 @@ from openood.preprocessors.utils import get_preprocessor
 from openood.utils.config import Config
 
 from .feature_dataset import FeatDataset
+from .imglist_dataset import ImglistDataset
 from .imglist_augmix_dataset import ImglistAugMixDataset
 from .imglist_extradata_dataset import (ImglistExtraDataDataset,
                                         TwoSourceSampler)
+from .udg_dataset import UDGDataset
+
+__all__ = (
+    'ImglistDataset',
+    'UDGDataset',
+)
 
 
 def get_dataloader(config: Config):
@@ -71,6 +78,7 @@ def get_dataloader(config: Config):
                 imglist_pth=split_config.imglist_pth,
                 data_dir=split_config.data_dir,
                 num_classes=dataset_config.num_classes,
+                num_channels=dataset_config.num_channels,
                 preprocessor=preprocessor,
                 data_aux_preprocessor=data_aux_preprocessor)
             sampler = None

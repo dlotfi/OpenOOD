@@ -26,6 +26,7 @@ from .openmax_net import OpenMax
 from .patchcore_net import PatchcoreNet
 from .projection_net import ProjectionNet
 from .react_net import ReactNet
+from .resnet18_28x28 import ResNet18_28x28
 from .resnet18_32x32 import ResNet18_32x32
 from .resnet18_64x64 import ResNet18_64x64
 from .resnet18_224x224 import ResNet18_224x224
@@ -43,7 +44,11 @@ def get_network(network_config):
 
     num_classes = network_config.num_classes
 
-    if network_config.name == 'resnet18_32x32':
+    if network_config.name == 'resnet18_28x28':
+        net = ResNet18_28x28(in_channels=network_config.num_channels,
+                             num_classes=num_classes)
+
+    elif network_config.name == 'resnet18_32x32':
         net = ResNet18_32x32(num_classes=num_classes)
 
     elif network_config.name == 'resnet18_256x256':
@@ -395,8 +400,10 @@ def get_network(network_config):
             pass
         else:
             try:
-                net.load_state_dict(torch.load(network_config.checkpoint),
-                                    strict=False)
+                checkpoint = torch.load(network_config.checkpoint)
+                if network_config.checkpoint_key is not None:
+                    checkpoint = checkpoint[network_config.checkpoint_key]
+                net.load_state_dict(checkpoint, strict=True)
             except RuntimeError:
                 # sometimes fc should not be loaded
                 loaded_pth = torch.load(network_config.checkpoint)

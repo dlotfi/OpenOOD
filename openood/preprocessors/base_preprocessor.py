@@ -15,6 +15,9 @@ class BasePreprocessor():
         if normalization_type in normalization_dict.keys():
             self.mean = normalization_dict[normalization_type][0]
             self.std = normalization_dict[normalization_type][1]
+        elif config.dataset.num_channels == 1:
+            self.mean = [0.5]
+            self.std = [0.5]
         else:
             self.mean = [0.5, 0.5, 0.5]
             self.std = [0.5, 0.5, 0.5]
@@ -39,7 +42,7 @@ class BasePreprocessor():
             ])
         else:
             self.transform = tvs_trans.Compose([
-                Convert('RGB'),
+                Convert(('RGB', 'L')[config.dataset.num_channels == 1]),
                 tvs_trans.Resize(self.pre_size,
                                  interpolation=self.interpolation),
                 tvs_trans.CenterCrop(self.image_size),

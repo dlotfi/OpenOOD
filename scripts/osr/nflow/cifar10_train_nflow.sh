@@ -16,7 +16,7 @@ python main.py \
 # train
 python main.py \
     --config configs/datasets/cifar10/cifar10.yml \
-    configs/networks/nflow.yml \
+    configs/networks/nflow_resnet18_32x32.yml \
     configs/pipelines/train/train_nflow.yml \
     configs/preprocessors/base_preprocessor.yml \
     configs/postprocessors/nflow.yml \

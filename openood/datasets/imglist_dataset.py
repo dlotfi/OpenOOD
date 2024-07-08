@@ -31,6 +31,7 @@ class ImglistDataset(BaseDataset):
                  maxlen=None,
                  dummy_read=False,
                  dummy_size=None,
+                 num_channels=3,
                  **kwargs):
         super(ImglistDataset, self).__init__(**kwargs)
 
@@ -39,6 +40,7 @@ class ImglistDataset(BaseDataset):
             self.imglist = imgfile.readlines()
         self.data_dir = data_dir
         self.num_classes = num_classes
+        self.num_channels = num_channels
         self.preprocessor = preprocessor
         self.transform_image = preprocessor
         self.transform_aux_image = data_aux_preprocessor
@@ -68,8 +70,9 @@ class ImglistDataset(BaseDataset):
         try:
             # some preprocessor methods require setup
             self.preprocessor.setup(**kwargs)
-        except:
-            pass
+        except Exception as e:
+            logging.warning(
+                f'Encountered an error during preprocessor setup: {e}')
 
         try:
             if not self.dummy_read:
@@ -80,7 +83,8 @@ class ImglistDataset(BaseDataset):
             if self.dummy_size is not None:
                 sample['data'] = torch.rand(self.dummy_size)
             else:
-                image = Image.open(buff).convert('RGB')
+                image = Image.open(buff).convert(
+                    ('RGB', 'L')[self.num_channels == 1])
                 sample['data'] = self.transform_image(image)
                 sample['data_aux'] = self.transform_aux_image(image)
             extras = ast.literal_eval(extra_str)
