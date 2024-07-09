@@ -4,9 +4,6 @@
 SEED=0
 
 # feature extraction
-# NOTE!!!!
-# need to manually change the network checkpoint path (not backbone) in configs/pipelines/test/feat_extract_nflow.yml
-# corresponding to different runs
 python main.py \
     --config configs/datasets/medmnist/organamnist.yml \
     configs/datasets/medmnist/organamnist_ood.yml \
@@ -14,6 +11,8 @@ python main.py \
     configs/pipelines/test/feat_extract_nflow.yml \
     configs/preprocessors/base_preprocessor.yml \
     --num_workers 8 \
+    --network.pretrained True \
+    --network.checkpoint "./results/organamnist_nflow_nflow_e100_lr0.0001_default/s${SEED}/best_nflow.ckpt" None \
     --network.backbone.pretrained True \
     --network.backbone.checkpoint "./results/organamnist_resnet18_28x28/s${SEED}/resnet18_28_1.pth" \
     --network.backbone.checkpoint_key "net" \

@@ -229,6 +229,17 @@ class Config(dict):
             if value_type is None:
                 value_type = type(self[key])
 
+            if value_type is list:
+                value_str = [value_str]
+                while index + 1 < len(cmd_args):
+                    next_arg_or_value = cmd_args[index]
+                    if next_arg_or_value.startswith('--'):
+                        break
+                    if next_arg_or_value.lower() in {'none', 'null'}:
+                        next_arg_or_value = None
+                    value_str.append(next_arg_or_value)
+                    index += 1
+
             if value_type is bool:
                 self[key] = {
                     'true': True,

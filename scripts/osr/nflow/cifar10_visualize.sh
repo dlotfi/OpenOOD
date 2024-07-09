@@ -4,9 +4,6 @@
 SEED=0
 
 # feature extraction
-# NOTE!!!!
-# need to manually change the network checkpoint path (not backbone) in configs/pipelines/test/feat_extract_nflow.yml
-# corresponding to different runs
 python main.py \
     --config configs/datasets/cifar10/cifar10.yml \
     configs/datasets/cifar10/cifar10_ood.yml \
@@ -14,6 +11,8 @@ python main.py \
     configs/pipelines/test/feat_extract_nflow.yml \
     configs/preprocessors/base_preprocessor.yml \
     --num_workers 8 \
+    --network.pretrained True \
+    --network.checkpoint "./results/cifar10_nflow_nflow_e100_lr0.0001_default/s${SEED}/best_nflow.ckpt" None \
     --network.backbone.pretrained True \
     --network.backbone.checkpoint "./results/cifar10_resnet18_32x32_base_e100_lr0.1_default/s${SEED}/best.ckpt" \
     --seed ${SEED}
