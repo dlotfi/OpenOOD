@@ -1,3 +1,7 @@
+import random
+
+import numpy as np
+import torch
 from torch import nn
 
 from openood.datasets import get_dataloader, get_ood_dataloader
@@ -66,6 +70,12 @@ class FeatExtractNormalizingFlowPipeline:
     def run(self):
         # generate output directory and save the full config file
         setup_logger(self.config)
+
+        # set random seed
+        # for deterministic training
+        torch.manual_seed(self.config.seed)
+        np.random.seed(self.config.seed)
+        random.seed(self.config.seed)
 
         # get dataloader
         id_loader_dict = get_dataloader(self.config)

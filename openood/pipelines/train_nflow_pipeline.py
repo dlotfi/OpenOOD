@@ -1,3 +1,5 @@
+import random
+
 import numpy as np
 import torch
 
@@ -21,6 +23,8 @@ class TrainNormalizingFlowPipeline:
         # set random seed
         torch.manual_seed(self.config.seed)
         np.random.seed(self.config.seed)
+        random.seed(self.config.seed)
+        torch.use_deterministic_algorithms(True)
 
         # get dataloader
         dataloaders = get_feature_nflow_dataloader(self.config.dataset)

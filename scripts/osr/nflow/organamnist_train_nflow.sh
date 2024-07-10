@@ -2,6 +2,7 @@
 # sh scripts/osr/nflow/organamnist_train_nflow.sh
 
 SEED=0
+export CUBLAS_WORKSPACE_CONFIG=:4096:8
 
 # feature extraction
 python main.py \

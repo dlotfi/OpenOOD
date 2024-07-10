@@ -1,34 +1,20 @@
 import numpy as np
 import torch
-import torch.nn as nn
 import torch.optim as optim
 from tqdm import tqdm
 
 import openood.utils.comm as comm
 
 
-def weights_init(m):
-    classname = m.__class__.__name__
-    if classname.find('Conv') != -1:
-        nn.init.normal_(m.weight.data, 0.0, 0.02)
-    elif classname.find('BatchNorm') != -1:
-        nn.init.normal_(m.weight.data, 1.0, 0.02)
-        nn.init.constant_(m.bias.data, 0)
-
-
 class NormalizingFlowTrainer:
     def __init__(self, net, feat_loader, config) -> None:
-
-        # manualSeed = 999
-        # print('Random Seed: ', manualSeed)
-        # random.seed(manualSeed)
-        # torch.manual_seed(manualSeed)
-
         self.config = config
         self.net = net
         self.nflow = net['nflow']
-        self.nflow.apply(weights_init)
         self.feat_loader = feat_loader
+
+        for p in self.net['backbone'].parameters():
+            p.requires_grad = False
 
         optimizer_config = self.config.optimizer
         self.optimizer = optim.Adam(self.nflow.parameters(),
