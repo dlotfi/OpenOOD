@@ -35,8 +35,25 @@ def get_label(split_name: str, datasets: List[str] = None):
     return label
 
 
-def remove_outliers(scores, features=None, m=3):
-    keep_indices = abs(scores - np.mean(scores)) < m * np.std(scores)
+def remove_outliers(scores, features=None, method='zscore', threshold=3.0):
+    if method is None:
+        keep_indices = np.ones(len(scores), dtype=bool)
+    elif method == 'zscore':
+        keep_indices = abs(scores -
+                           np.mean(scores)) < threshold * np.std(scores)
+    elif method == 'iqr':
+        Q1 = np.percentile(scores, 25)
+        Q3 = np.percentile(scores, 75)
+        IQR = Q3 - Q1
+        keep_indices = (scores >= Q1 - threshold * IQR) & \
+                       (scores <= Q3 + threshold * IQR)
+    elif method == 'mad':
+        median = np.median(scores)
+        mad = np.median(abs(scores - median))
+        keep_indices = abs(scores - median) < threshold * mad
+    else:
+        raise ValueError(f'Unknown method: {method}')
+
     if features is not None:
         return scores[keep_indices], features[keep_indices]
     return scores[keep_indices]
@@ -82,7 +99,12 @@ def load_scores(score_dir: str, datasets: List[str], use_log: bool):
     return score_list
 
 
-def plot_spectrum(datasets: dict, score_dir: str, out_dir: str, use_log=False):
+def plot_spectrum(datasets: dict,
+                  score_dir: str,
+                  out_dir: str,
+                  outlier_method: str = None,
+                  outlier_thresh=3.0,
+                  use_log=False):
     score_dir = os.path.normpath(score_dir)
     out_dir = os.path.normpath(out_dir)
     id_scores = load_scores(score_dir, datasets['id'], use_log)
@@ -90,9 +112,18 @@ def plot_spectrum(datasets: dict, score_dir: str, out_dir: str, use_log=False):
     nearood_scores = load_scores(score_dir, datasets['nearood'], use_log)
     farood_scores = load_scores(score_dir, datasets['farood'], use_log)
 
-    # csid_scores = remove_outliers(csid_scores, m=3)
-    nearood_scores = remove_outliers(nearood_scores, m=3)
-    farood_scores = remove_outliers(farood_scores, m=2)
+    id_scores = remove_outliers(id_scores,
+                                method=outlier_method,
+                                threshold=outlier_thresh)
+    # csid_scores = remove_outliers(csid_scores,
+    #                               method=outlier_method,
+    #                               threshold=outlier_thresh)
+    nearood_scores = remove_outliers(nearood_scores,
+                                     method=outlier_method,
+                                     threshold=outlier_thresh)
+    farood_scores = remove_outliers(farood_scores,
+                                    method=outlier_method,
+                                    threshold=outlier_thresh)
 
     scores_dict = {
         'farood': farood_scores,
@@ -176,7 +207,12 @@ def draw_tsne_plot(feats_dict, title, output_path, datasets):
     plt.savefig(output_path, bbox_inches='tight')
 
 
-def plot_tsne(datasets: dict, feat_dir: str, out_dir: str, merge_plots=False):
+def plot_tsne(datasets: dict,
+              feat_dir: str,
+              out_dir: str,
+              outlier_method: str = None,
+              outlier_thresh=3.0,
+              merge_plots=False):
     feat_dir = os.path.normpath(feat_dir)
     out_dir = os.path.normpath(out_dir)
     id_feats, id_feats_flow = load_features(datasets['id'],
@@ -216,8 +252,12 @@ def plot_tsne(datasets: dict, feat_dir: str, out_dir: str, merge_plots=False):
             f'{out_dir}/tsne_features_flow.png', datasets)
 
 
-def plot_tsne_score(datasets: dict, feat_dir: str, score_dir: str,
-                    out_dir: str):
+def plot_tsne_score(datasets: dict,
+                    feat_dir: str,
+                    score_dir: str,
+                    out_dir: str,
+                    outlier_method: str = None,
+                    outlier_thresh=3.0):
     feat_dir = os.path.normpath(feat_dir)
     out_dir = os.path.normpath(out_dir)
     id_feats, _, id_scores = load_features(datasets['id'],
@@ -233,12 +273,15 @@ def plot_tsne_score(datasets: dict, feat_dir: str, score_dir: str,
                                                    score_dir,
                                                    n_samples=1000)
 
+    id_scores, id_feats = remove_outliers(id_scores, id_feats, outlier_method,
+                                          outlier_thresh)
     nearood_scores, nearood_feats = remove_outliers(nearood_scores,
                                                     nearood_feats,
-                                                    m=3)
-    farood_scores, farood_feats = remove_outliers(farood_scores,
-                                                  farood_feats,
-                                                  m=2)
+                                                    outlier_method,
+                                                    outlier_thresh)
+    farood_scores, farood_feats = remove_outliers(farood_scores, farood_feats,
+                                                  outlier_method,
+                                                  outlier_thresh)
 
     feats_dict = {
         'farood': farood_feats,
@@ -302,6 +345,16 @@ if __name__ == '__main__':
     parser.add_argument('--out_dir',
                         help='path to the output directory',
                         required=True)
+    parser.add_argument(
+        '--outlier_method',
+        default=None,
+        help='the method for outlier removal (zscore, iqr, mad)',
+        required=False)
+    parser.add_argument('--outlier_thresh',
+                        type=float,
+                        default=3,
+                        help='the threshold for outlier removal',
+                        required=False)
     parser.add_argument('--seed',
                         type=int,
                         default=0,
@@ -313,11 +366,14 @@ if __name__ == '__main__':
     np.random.seed(opt.seed)
     # draw plots
     datasets = {
-        # 'csid_datasets': config.ood_dataset.nearood.datasets,
+        # 'csid_datasets': config.fsood_dataset.csid.datasets,
         'farood': config.ood_dataset.farood.datasets,
         'nearood': config.ood_dataset.nearood.datasets,
         'id': [config.dataset.name]
     }
-    plot_spectrum(datasets, opt.score_dir, opt.out_dir)
-    plot_tsne(datasets, opt.feat_dir, opt.out_dir)
-    plot_tsne_score(datasets, opt.feat_dir, opt.score_dir, opt.out_dir)
+    plot_spectrum(datasets, opt.score_dir, opt.out_dir, opt.outlier_method,
+                  opt.outlier_thresh)
+    plot_tsne(datasets, opt.feat_dir, opt.out_dir, opt.outlier_method,
+              opt.outlier_thresh)
+    plot_tsne_score(datasets, opt.feat_dir, opt.score_dir, opt.out_dir,
+                    opt.outlier_method, opt.outlier_thresh)

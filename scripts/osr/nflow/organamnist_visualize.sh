@@ -25,4 +25,5 @@ python visualize.py \
     --score_dir "./results/organamnist_nflow_test_ood_ood_nflow_default/s${SEED}/ood/scores" \
     --feat_dir "./results/organamnist_nflow_feat_extract_nflow" \
     --out_dir "./results/organamnist_nflow_test_ood_ood_nflow_default/s${SEED}/ood" \
+    --outlier_method iqr \
     --seed ${SEED}
