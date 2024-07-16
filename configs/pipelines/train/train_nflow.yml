@@ -29,6 +29,7 @@ optimizer:
   num_epochs: 100
   lr: 0.0001
   betas: [0.5,0.999]
+  grad_clip_norm: 5.0
 
 recorder:
   name: nflow

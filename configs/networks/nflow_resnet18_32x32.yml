@@ -12,6 +12,8 @@ network:
     latent_size: 512
     # Number of flows
     n_flows: 4
+    # The clamp value for the MLPs
+    clamp_value: 25.0
 
   # network used for feature extraction
   backbone:

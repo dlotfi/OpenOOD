@@ -17,6 +17,7 @@ class NormalizingFlowTrainer:
             p.requires_grad = False
 
         optimizer_config = self.config.optimizer
+        self.grad_clip_norm = optimizer_config.grad_clip_norm
         self.optimizer = optim.Adam(self.nflow.parameters(),
                                     lr=optimizer_config.lr,
                                     betas=optimizer_config.betas)
@@ -36,6 +37,10 @@ class NormalizingFlowTrainer:
             self.nflow.zero_grad()
             loss = self.nflow.forward_kld(feats.flatten(1))
             loss.backward()
+            if self.grad_clip_norm:
+                torch.nn.utils.clip_grad_norm_(self.nflow.parameters(),
+                                               max_norm=self.grad_clip_norm,
+                                               error_if_nonfinite=True)
             self.optimizer.step()
 
             # exponential moving average, show smooth values
