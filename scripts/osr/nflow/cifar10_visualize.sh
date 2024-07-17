@@ -24,5 +24,5 @@ python visualize.py \
     --score_dir "./results/cifar10_nflow_test_ood_ood_nflow_default/s${SEED}/ood/scores" \
     --feat_dir "./results/cifar10_nflow_feat_extract_nflow" \
     --out_dir "./results/cifar10_nflow_test_ood_ood_nflow_default/s${SEED}/ood" \
-    --outlier_method iqr \
+    --outlier_method auto \
     --seed ${SEED}
