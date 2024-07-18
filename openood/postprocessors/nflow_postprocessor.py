@@ -13,12 +13,9 @@ class NormalizingFlowPostprocessor(BasePostprocessor):
     def postprocess(self, net, data: Any):
         # images input
         if data.shape[-1] > 1 and data.shape[1] == 3:
-            output = net['backbone'](data)
+            output, feats = net['backbone'](data, return_feature=True)
             score = torch.softmax(output, dim=1)
             _, pred = torch.max(score, dim=1)
-
-            _, feats = net['backbone'](data, return_feature=True)
-            # feats = feats.unsqueeze_(-1).unsqueeze_(-1)
             log_prob = net['nflow'].log_prob(feats)
             log_prob = log_prob.view(-1, 1)
             conf = log_prob.reshape(-1).detach().cpu()
