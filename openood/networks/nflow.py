@@ -16,6 +16,9 @@ class ClampedMLP(nf.nets.MLP):
 
 def get_normalizing_flow(network_config):
     latent_size = network_config.latent_size
+    hidden_size = network_config.hidden_size
+    if hidden_size is None:
+        hidden_size = latent_size * 2
     n_flows = network_config.n_flows
     clamp_value = network_config.clamp_value
     b = torch.Tensor([1 if i % 2 == 0 else 0 for i in range(latent_size)])
@@ -23,11 +26,11 @@ def get_normalizing_flow(network_config):
     for i in range(n_flows):
         s = ClampedMLP(max=clamp_value,
                        min=-clamp_value,
-                       layers=[latent_size, 2 * latent_size, latent_size],
+                       layers=[latent_size, hidden_size, latent_size],
                        init_zeros=True)
         t = ClampedMLP(max=clamp_value,
                        min=-clamp_value,
-                       layers=[latent_size, 2 * latent_size, latent_size],
+                       layers=[latent_size, hidden_size, latent_size],
                        init_zeros=True)
         if i % 2 == 0:
             flows += [nf.flows.MaskedAffineFlow(b, t, s)]

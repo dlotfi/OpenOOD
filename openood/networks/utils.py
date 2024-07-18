@@ -369,6 +369,10 @@ def get_network(network_config):
         backbone = get_network(network_config.backbone)
         nflow_net = get_normalizing_flow(network_config.nflow)
         net = {'nflow': nflow_net, 'backbone': backbone}
+    elif network_config.name == 'feat_concat':
+        from .feat_concat import FeatureConcatNetwork
+        encoder = get_network(network_config.encoder)
+        net = FeatureConcatNetwork(encoder, network_config.feat_agg.layers)
     else:
         raise Exception('Unexpected Network Architecture!')
 

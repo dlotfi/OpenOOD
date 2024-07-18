@@ -1,0 +1,38 @@
+network:
+  name: nflow
+  num_classes: '@{dataset.num_classes}'
+  image_size: '@{dataset.image_size}'
+  pretrained: False
+  checkpoint: none           # ignore if pretrained is false
+  num_gpus: '@{num_gpus}'
+
+  # normalizing flow network (RealNVP)
+  nflow:
+    # The size of the latent space
+    latent_size: 1024
+    # The number of the hidden units
+    hidden_size: 1024  # if not specified it will be twice of the latent_size
+    # Number of flows
+    n_flows: 4
+    # The clamp value for the MLPs
+    clamp_value: 15.0
+
+  # network used for feature extraction and aggregation
+  backbone:
+    name: feat_concat
+    num_gpus: '@{num_gpus}'
+
+    # feature aggregation network
+    feat_agg:
+      layers: [1, 2, 3, 4, 5]
+
+    # network used for feature extraction
+    encoder:
+      name: resnet18_224x224
+      num_classes: '@{dataset.num_classes}'
+      num_channels: '@{dataset.num_channels}'
+      image_size: '@{dataset.image_size}'
+      pretrained: False
+      checkpoint: none
+      checkpoint_key: none
+      num_gpus: '@{num_gpus}'
