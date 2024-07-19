@@ -16,12 +16,17 @@ class NormalizingFlowPostprocessor(BasePostprocessor):
             output, feats = net['backbone'](data, return_feature=True)
             score = torch.softmax(output, dim=1)
             _, pred = torch.max(score, dim=1)
+            if 'feat_agg' in net:
+                feats = net['feat_agg'](feats)
             log_prob = net['nflow'].log_prob(feats)
             log_prob = log_prob.view(-1, 1)
             conf = log_prob.reshape(-1).detach().cpu()
         # feature input
         elif data.shape[-1] == 1 and data.shape[-1] == 1:
-            log_prob = net['nflow'].log_prob(data.flatten(1))
+            feats = data.flatten(1)
+            if 'feat_agg' in net:
+                feats = net['feat_agg'](feats)
+            log_prob = net['nflow'].log_prob(feats)
             log_prob = log_prob.view(-1, 1)
             conf = log_prob.reshape(-1).detach().cpu()
             pred = torch.ones_like(conf)  # dummy predictions

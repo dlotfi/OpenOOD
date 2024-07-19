@@ -1,6 +1,7 @@
 import numpy as np
 import torch
 import torch.optim as optim
+from torch import nn
 from tqdm import tqdm
 
 import openood.utils.comm as comm
@@ -10,19 +11,24 @@ class NormalizingFlowTrainer:
     def __init__(self, net, feat_loader, config) -> None:
         self.config = config
         self.net = net
+        self.feat_agg = net.get('feat_agg', nn.Identity())
         self.nflow = net['nflow']
         self.feat_loader = feat_loader
 
         for p in self.net['backbone'].parameters():
             p.requires_grad = False
+        self.learnable_params = (list(self.nflow.parameters()) +
+                                 list(self.feat_agg.parameters()))
 
         optimizer_config = self.config.optimizer
         self.grad_clip_norm = optimizer_config.grad_clip_norm
-        self.optimizer = optim.Adam(self.nflow.parameters(),
+        self.optimizer = optim.Adam(self.learnable_params,
                                     lr=optimizer_config.lr,
                                     betas=optimizer_config.betas)
 
     def train_epoch(self, epoch_idx):
+        self.nflow.train()
+        self.feat_agg.train()
 
         feat_dataiter = iter(self.feat_loader)
 
@@ -35,10 +41,12 @@ class NormalizingFlowTrainer:
                                disable=not comm.is_main_process()):
             feats = next(feat_dataiter)['data'].cuda()
             self.nflow.zero_grad()
-            loss = self.nflow.forward_kld(feats.flatten(1))
+            self.feat_agg.zero_grad()
+            feats = self.feat_agg(feats.flatten(1))
+            loss = self.nflow.forward_kld(feats)
             loss.backward()
             if self.grad_clip_norm:
-                torch.nn.utils.clip_grad_norm_(self.nflow.parameters(),
+                torch.nn.utils.clip_grad_norm_(self.learnable_params,
                                                max_norm=self.grad_clip_norm,
                                                error_if_nonfinite=True)
             self.optimizer.step()

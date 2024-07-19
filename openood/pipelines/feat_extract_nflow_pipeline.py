@@ -11,16 +11,18 @@ from openood.utils import setup_logger
 
 
 class FullBackBoneNormalizingFlowNet(nn.Module):
-    def __init__(self, backbone, nflow):
+    def __init__(self, net):
         super(FullBackBoneNormalizingFlowNet, self).__init__()
-        self.backbone = backbone
-        self.nflow = nflow
+        self.backbone = net['backbone']
+        self.feat_agg = net.get('feat_agg', nn.Identity())
+        self.nflow = net['nflow']
 
     def forward(self, x, return_feature=False):
         if not return_feature:
             raise ValueError('return_feature must be True')
         logits_cls, backbone_features = self.backbone(x, return_feature=True)
-        return logits_cls, self.nflow.inverse(backbone_features.flatten(1))
+        feats = self.feat_agg(backbone_features.flatten(1))
+        return logits_cls, self.nflow.inverse(feats)
 
 
 class FeatExtractNormalizingFlowPipeline:
@@ -50,8 +52,7 @@ class FeatExtractNormalizingFlowPipeline:
 
     def extract_features_test(self, net, evaluator, id_loader_dict,
                               ood_loader_dict):
-        full_net = FullBackBoneNormalizingFlowNet(net['backbone'],
-                                                  net['nflow'])
+        full_net = FullBackBoneNormalizingFlowNet(net)
         # start extracting features
         print('\nStart Feature Extraction...', flush=True)
         print('\t ID test data...')

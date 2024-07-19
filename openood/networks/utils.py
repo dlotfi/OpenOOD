@@ -373,6 +373,17 @@ def get_network(network_config):
         from .feat_concat import FeatureConcatNetwork
         encoder = get_network(network_config.encoder)
         net = FeatureConcatNetwork(encoder, network_config.feat_agg.layers)
+    elif network_config.name == 'nflow_featagg':
+        from .nflow import get_normalizing_flow
+        from .feat_agg import get_feature_aggregator
+        backbone = get_network(network_config.backbone)
+        feat_agg_net = get_feature_aggregator(network_config.feat_agg)
+        nflow_net = get_normalizing_flow(network_config.nflow)
+        net = {
+            'nflow': nflow_net,
+            'feat_agg': feat_agg_net,
+            'backbone': backbone
+        }
     else:
         raise Exception('Unexpected Network Architecture!')
 

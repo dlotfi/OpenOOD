@@ -37,7 +37,12 @@ class TrainNormalizingFlowPipeline:
         # init network
         net = get_network(self.config.network)
         if self.config.num_gpus * self.config.num_machines > 1:
-            net = torch.nn.SyncBatchNorm.convert_sync_batchnorm(net)
+            if type(net) is dict:
+                for key in net.keys():
+                    net[key] = torch.nn.SyncBatchNorm.convert_sync_batchnorm(
+                        net[key])
+            else:
+                net = torch.nn.SyncBatchNorm.convert_sync_batchnorm(net)
 
         # init trainer
         trainer = get_trainer(net, dataloaders['id_train'],
