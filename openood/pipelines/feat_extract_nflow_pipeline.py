@@ -20,7 +20,7 @@ class FullBackBoneNormalizingFlowNet(nn.Module):
         if not return_feature:
             raise ValueError('return_feature must be True')
         logits_cls, backbone_features = self.backbone(x, return_feature=True)
-        return logits_cls, self.nflow.forward(backbone_features.flatten(1))
+        return logits_cls, self.nflow.inverse(backbone_features.flatten(1))
 
 
 class FeatExtractNormalizingFlowPipeline:
