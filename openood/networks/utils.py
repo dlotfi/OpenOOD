@@ -381,10 +381,9 @@ def get_network(network_config):
             if isinstance(network_config.checkpoint, list):
                 for subnet, checkpoint in zip(net.values(),
                                               network_config.checkpoint):
-                    if checkpoint is not None:
-                        if checkpoint != 'none':
-                            subnet.load_state_dict(torch.load(checkpoint),
-                                                   strict=False)
+                    if checkpoint not in {None, 'none'}:
+                        subnet.load_state_dict(torch.load(checkpoint),
+                                               strict=False)
             elif isinstance(network_config.checkpoint, str):
                 ckpt = torch.load(network_config.checkpoint)
                 subnet_ckpts = {k: {} for k in net.keys()}
@@ -405,7 +404,7 @@ def get_network(network_config):
         else:
             try:
                 checkpoint = torch.load(network_config.checkpoint)
-                if network_config.checkpoint_key is not None:
+                if network_config.checkpoint_key not in {None, 'none'}:
                     checkpoint = checkpoint[network_config.checkpoint_key]
                 net.load_state_dict(checkpoint, strict=True)
             except RuntimeError:

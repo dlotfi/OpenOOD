@@ -16,9 +16,9 @@ class FeatureConcatNetwork(nn.Module):
         features_to_aggregate = [
             f for i, f in enumerate(features_list) if (i + 1) in self.layers
         ]
-        aggregated_features = torch.cat([
+        concatenated_features = torch.cat([
             adaptive_avg_pool2d(f, (1, 1)).flatten(1)
             for f in features_to_aggregate
         ],
-                                        dim=1)
-        return logits_cls, aggregated_features
+                                          dim=1)
+        return logits_cls, concatenated_features
