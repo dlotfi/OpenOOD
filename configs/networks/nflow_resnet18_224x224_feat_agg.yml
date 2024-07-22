@@ -18,7 +18,7 @@ network:
     clamp_value: 15.0
 
   feat_agg:
-    type: 'linear'
+    type: 'mlp'
     layer_sizes: [64, 64, 128, 256, 512]
     output_size: 512
 

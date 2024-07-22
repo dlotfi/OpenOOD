@@ -8,7 +8,7 @@ seed: 0
 dataset:
   # cached features extracted from classifier
   feat_root: './results/cifar10_resnet18_32x32_feat_extract_nflow_default/s0'
-#  normalize_feat: True
+  # normalize_feat: True
 
 num_gpus: 1
 num_workers: 8
@@ -30,6 +30,7 @@ optimizer:
   lr: 0.0001
   betas: [0.5,0.999]
   grad_clip_norm: 5.0
+  weight_decay: 0.0
 
 recorder:
   name: nflow

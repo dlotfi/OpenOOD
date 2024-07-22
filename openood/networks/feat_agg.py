@@ -1,18 +1,16 @@
-from torch import nn
-
-
-class LinearFeatureAggregateNetwork(nn.Module):
-    def __init__(self, input_size, output_size):
-        super(LinearFeatureAggregateNetwork, self).__init__()
-        self.linear = nn.Linear(input_size, output_size)
-
-    def forward(self, feats):
-        return self.linear(feats)
+from normflows.nets import MLP
 
 
 def get_feature_aggregator(config):
-    if config.type == 'linear':
+    if config.type == 'mlp':
         input_size = sum(config.layer_sizes)
-        return LinearFeatureAggregateNetwork(input_size, config.output_size)
+        mlp1 = MLP([input_size, config.output_size])
+        # mlp2 = MLP([input_size, input_size, config.output_size])
+        # mlp3 = MLP([input_size, input_size * 2, config.output_size])
+        # mlp4 = MLP([input_size, config.output_size, config.output_size])
+        # mlp5 = MLP([input_size, input_size, config.output_size,
+        #             config.output_size])
+        # print(mlp1)
+        return mlp1
     else:
         raise Exception('Unexpected Feature Aggregator Network Type!')

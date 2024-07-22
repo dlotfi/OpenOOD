@@ -24,7 +24,8 @@ class NormalizingFlowTrainer:
         self.grad_clip_norm = optimizer_config.grad_clip_norm
         self.optimizer = optim.Adam(self.learnable_params,
                                     lr=optimizer_config.lr,
-                                    betas=optimizer_config.betas)
+                                    betas=optimizer_config.betas,
+                                    weight_decay=optimizer_config.weight_decay)
 
     def train_epoch(self, epoch_idx):
         self.nflow.train()
