@@ -29,4 +29,4 @@ python main.py \
     --network.backbone.encoder.checkpoint "./results/organamnist_resnet18_224x224/s${SEED}/resnet18_224_1.pth" \
     --network.backbone.encoder.checkpoint_key "net" \
     --seed ${SEED}
-    # --optimizer.weight_decay 0.0001
+    # --optimizer.weight_decay 0.0001  # in case of non-finite gradient norm error
