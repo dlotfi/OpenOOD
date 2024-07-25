@@ -30,7 +30,6 @@ network:
     encoder:
       name: resnet18_224x224
       num_classes: '@{dataset.num_classes}'
-      num_channels: '@{dataset.num_channels}'
       image_size: '@{dataset.image_size}'
       pretrained: False
       checkpoint: none

@@ -11,7 +11,6 @@ network:
   backbone:
     name: resnet50
     num_classes: '@{dataset.num_classes}'
-    num_channels: '@{dataset.num_channels}'
     image_size: '@{dataset.image_size}'
     pretrained: True
     checkpoint: 'results/checkpoints/imagenet_res50_acc76.10.pth'

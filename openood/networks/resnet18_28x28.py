@@ -144,12 +144,16 @@ class ResNet(nn.Module):
 
 
 def ResNet18_28x28(num_classes, in_channels=3):
+    if in_channels is None:
+        in_channels = 3
     return ResNet(BasicBlock, [2, 2, 2, 2],
                   in_channels=in_channels,
                   num_classes=num_classes)
 
 
 def ResNet50_28x28(num_classes, in_channels=3):
+    if in_channels is None:
+        in_channels = 3
     return ResNet(Bottleneck, [3, 4, 6, 3],
                   in_channels=in_channels,
                   num_classes=num_classes)
