@@ -47,11 +47,10 @@ def get_dataloader(config: Config):
                                              split_config.batch_size,
                                              split_config.orig_ratio)
 
-            dataloader = DataLoader(
-                dataset,
-                batch_sampler=batch_sampler,
-                num_workers=dataset_config.num_workers,
-            )
+            dataloader = DataLoader(dataset,
+                                    batch_sampler=batch_sampler,
+                                    num_workers=dataset_config.num_workers,
+                                    drop_last=bool(split_config.drop_last))
         elif split_config.dataset_class == 'ImglistAugMixDataset':
             dataset = ImglistAugMixDataset(
                 name=dataset_config.name + '_' + split,
@@ -70,7 +69,8 @@ def get_dataloader(config: Config):
                                     batch_size=split_config.batch_size,
                                     shuffle=split_config.shuffle,
                                     num_workers=dataset_config.num_workers,
-                                    sampler=sampler)
+                                    sampler=sampler,
+                                    drop_last=bool(split_config.drop_last))
         else:
             CustomDataset = eval(split_config.dataset_class)
             dataset = CustomDataset(
@@ -91,7 +91,8 @@ def get_dataloader(config: Config):
                                     batch_size=split_config.batch_size,
                                     shuffle=split_config.shuffle,
                                     num_workers=dataset_config.num_workers,
-                                    sampler=sampler)
+                                    sampler=sampler,
+                                    drop_last=bool(split_config.drop_last))
 
         dataloader_dict[split] = dataloader
     return dataloader_dict
