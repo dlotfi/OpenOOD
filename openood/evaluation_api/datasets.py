@@ -300,6 +300,111 @@ DATA_INFO = {
             },
         }
     },
+    'organamnist': {
+        'num_classes': 11,
+        'id': {
+            'train': {
+                'data_dir': 'medmnist/',
+                'imglist_path':
+                'benchmark_imglist/medmnist/train_organamnist.txt'
+            },
+            'val': {
+                'data_dir': 'medmnist/',
+                'imglist_path':
+                'benchmark_imglist/medmnist/val_organamnist.txt'
+            },
+            'test': {
+                'data_dir': 'medmnist/',
+                'imglist_path':
+                'benchmark_imglist/medmnist/test_organamnist.txt'
+            }
+        },
+        'csid': {
+            'datasets': [],
+        },
+        'ood': {
+            'val': {
+                'data_dir': 'medmnist/',
+                'imglist_path':
+                'benchmark_imglist/medmnist/val_organcmnist.txt'
+            },
+            'near': {
+                'datasets':
+                ['organcmnist', 'organsmnist', 'chestmnist', 'pneumoniamnist'],
+                'organcmnist': {
+                    'data_dir':
+                    'medmnist/',
+                    'imglist_path':
+                    'benchmark_imglist/medmnist/test_organcmnist.txt'
+                },
+                'organsmnist': {
+                    'data_dir':
+                    'medmnist/',
+                    'imglist_path':
+                    'benchmark_imglist/medmnist/test_organsmnist.txt'
+                },
+                'chestmnist': {
+                    'data_dir':
+                    'medmnist/',
+                    'imglist_path':
+                    'benchmark_imglist/medmnist/test_chestmnist.txt'
+                },
+                'pneumoniamnist': {
+                    'data_dir':
+                    'medmnist/',
+                    'imglist_path':
+                    'benchmark_imglist/medmnist/test_pneumoniamnist.txt'
+                },
+            },
+            'far': {
+                'datasets': [
+                    'pathmnist', 'dermamnist', 'retinamnist', 'bloodmnist',
+                    'mnist', 'cifar10', 'texture', 'tin'
+                ],
+                'pathmnist': {
+                    'data_dir': 'medmnist/',
+                    'imglist_path':
+                    'benchmark_imglist/medmnist/test_pathmnist.txt'
+                },
+                'dermamnist': {
+                    'data_dir':
+                    'medmnist/',
+                    'imglist_path':
+                    'benchmark_imglist/medmnist/test_dermamnist.txt'
+                },
+                'retinamnist': {
+                    'data_dir':
+                    'medmnist/',
+                    'imglist_path':
+                    'benchmark_imglist/medmnist/test_retinamnist.txt'
+                },
+                'bloodmnist': {
+                    'data_dir':
+                    'medmnist/',
+                    'imglist_path':
+                    'benchmark_imglist/medmnist/test_bloodmnist.txt'
+                },
+                'mnist': {
+                    'data_dir': 'images_classic/',
+                    'imglist_path': 'benchmark_imglist/medmnist/test_mnist.txt'
+                },
+                'cifar10': {
+                    'data_dir': 'images_classic/',
+                    'imglist_path':
+                    'benchmark_imglist/medmnist/test_cifar10.txt'
+                },
+                'texture': {
+                    'data_dir': 'images_classic/',
+                    'imglist_path':
+                    'benchmark_imglist/medmnist/test_texture.txt'
+                },
+                'tin': {
+                    'data_dir': 'images_classic/',
+                    'imglist_path': 'benchmark_imglist/medmnist/test_tin.txt'
+                },
+            }
+        }
+    },
 }
 
 download_id_dict = {
@@ -357,6 +462,11 @@ benchmarks_dict = {
     'imagenet': [
         'imagenet_1k', 'ssb_hard', 'ninco', 'inaturalist', 'texture',
         'openimage_o', 'imagenet_v2', 'imagenet_c', 'imagenet_r'
+    ],
+    'organamnist': [
+        'organamnist', 'organcmnist', 'organsmnist', 'chestmnist',
+        'pneumoniamnist', 'pathmnist', 'dermamnist', 'retinamnist',
+        'bloodmnist', 'mnist', 'cifar10', 'texture', 'tin'
     ],
 }
 

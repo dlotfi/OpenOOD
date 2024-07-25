@@ -35,7 +35,12 @@ default_preprocessing_dict = {
         'pre_size': 512,
         'img_size': 448,
         'normalization': [[0.5, 0.5, 0.5], [0.5, 0.5, 0.5]],
-    }
+    },
+    'organamnist': {
+        'pre_size': 28,
+        'img_size': 28,
+        'normalization': [[0.5, 0.5, 0.5], [0.5, 0.5, 0.5]],
+    },
 }
 
 

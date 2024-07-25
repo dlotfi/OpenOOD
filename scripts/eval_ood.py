@@ -1,4 +1,5 @@
-import os, sys
+import os
+import sys
 ROOT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
 sys.path.append(ROOT_DIR)
 import numpy as np
@@ -14,7 +15,8 @@ import torch.nn.functional as F
 
 from openood.evaluation_api import Evaluator
 
-from openood.networks import ResNet18_32x32, ResNet18_224x224, ResNet50
+from openood.networks import (ResNet18_32x32, ResNet18_28x28, ResNet18_224x224,
+                              ResNet50)
 from openood.networks.conf_branch_net import ConfBranchNet
 from openood.networks.godin_net import GodinNet
 from openood.networks.rot_net import RotNet
@@ -24,6 +26,8 @@ from openood.networks.cider_net import CIDERNet
 from openood.networks.npos_net import NPOSNet
 from openood.networks.palm_net import PALMNet
 from openood.networks.t2fnorm_net import T2FNormNet
+
+__all__ = ('nn', 'F', 'ResNet50')
 
 
 def update(d, u):
@@ -38,11 +42,13 @@ def update(d, u):
 parser = argparse.ArgumentParser()
 parser.add_argument('--root', required=True)
 parser.add_argument('--postprocessor', default='msp')
-parser.add_argument(
-    '--id-data',
-    type=str,
-    default='cifar10',
-    choices=['cifar10', 'cifar100', 'aircraft', 'cub', 'imagenet200'])
+parser.add_argument('--id-data',
+                    type=str,
+                    default='cifar10',
+                    choices=[
+                        'cifar10', 'cifar100', 'aircraft', 'cub',
+                        'imagenet200', 'organamnist'
+                    ])
 parser.add_argument('--batch-size', type=int, default=200)
 parser.add_argument('--save-csv', action='store_true')
 parser.add_argument('--save-score', action='store_true')
@@ -55,11 +61,17 @@ root = args.root
 # 'openmax', 'msp', 'temp_scaling', 'odin'...
 postprocessor_name = args.postprocessor
 
-NUM_CLASSES = {'cifar10': 10, 'cifar100': 100, 'imagenet200': 200}
+NUM_CLASSES = {
+    'cifar10': 10,
+    'cifar100': 100,
+    'imagenet200': 200,
+    'organamnist': 11
+}
 MODEL = {
     'cifar10': ResNet18_32x32,
     'cifar100': ResNet18_32x32,
     'imagenet200': ResNet18_224x224,
+    'organamnist': ResNet18_28x28
 }
 
 try:
@@ -147,10 +159,11 @@ for subfolder in sorted(glob(os.path.join(root, 's*'))):
         config_root=os.path.join(ROOT_DIR, 'configs'),
         preprocessor=None,  # default preprocessing
         postprocessor_name=postprocessor_name,
-        postprocessor=
-        postprocessor,  # the user can pass his own postprocessor as well
-        batch_size=args.
-        batch_size,  # for certain methods the results can be slightly affected by batch size
+        # the user can pass his own postprocessor as well
+        postprocessor=postprocessor,
+        # for certain methods the results can be
+        # slightly affected by batch size
+        batch_size=args.batch_size,
         shuffle=False,
         num_workers=8)
 
