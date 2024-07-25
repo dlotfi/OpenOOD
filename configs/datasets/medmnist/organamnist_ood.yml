@@ -30,11 +30,11 @@ ood_dataset:
       data_dir: ./data/medmnist/
       imglist_pth: ./data/benchmark_imglist/medmnist/test_pneumoniamnist.txt
   farood:
-    datasets: [pathmnist, dermamnsit, retinamnist, bloodmnist, mnist, cifar10, texture, tin]
+    datasets: [pathmnist, dermamnist, retinamnist, bloodmnist, mnist, cifar10, texture, tin]
     pathmnist:
       data_dir: ./data/medmnist/
       imglist_pth: ./data/benchmark_imglist/medmnist/test_pathmnist.txt
-    dermamnsit:
+    dermamnist:
       data_dir: ./data/medmnist/
       imglist_pth: ./data/benchmark_imglist/medmnist/test_dermamnist.txt
     retinamnist:
