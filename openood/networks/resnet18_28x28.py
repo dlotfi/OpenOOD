@@ -122,6 +122,26 @@ class ResNet(nn.Module):
         else:
             return logits_cls
 
+    def forward_threshold(self, x, threshold):
+        feature1 = F.relu(self.bn1(self.conv1(x)))
+        feature2 = self.layer1(feature1)
+        feature3 = self.layer2(feature2)
+        feature4 = self.layer3(feature3)
+        feature5 = self.layer4(feature4)
+        feature5 = self.avgpool(feature5)
+        feature = feature5.clip(max=threshold)
+        feature = feature.view(feature.size(0), -1)
+        logits_cls = self.linear(feature)
+
+        return logits_cls
+
+    def get_fc(self):
+        fc = self.linear
+        return fc.weight.cpu().detach().numpy(), fc.bias.cpu().detach().numpy()
+
+    def get_fc_layer(self):
+        return self.linear
+
 
 def ResNet18_28x28(in_channels, num_classes):
     return ResNet(BasicBlock, [2, 2, 2, 2],

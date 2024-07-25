@@ -42,6 +42,7 @@ from .vim_postprocessor import VIMPostprocessor
 from .rts_postprocessor import RTSPostprocessor
 from .gen_postprocessor import GENPostprocessor
 from .relation_postprocessor import RelationPostprocessor
+from .scale_postprocessor import ScalePostprocessor
 
 
 def get_postprocessor(config: Config):
@@ -80,6 +81,7 @@ def get_postprocessor(config: Config):
         'dice': DICEPostprocessor,
         'ssd': SSDPostprocessor,
         'she': SHEPostprocessor,
+        'scale': ScalePostprocessor,
         'rd4ad': Rd4adPostprocessor,
         'rts': RTSPostprocessor,
         'rotpred': RotPredPostprocessor,
