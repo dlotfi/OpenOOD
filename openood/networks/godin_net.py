@@ -79,12 +79,10 @@ class GodinNet(nn.Module):
         self.num_classes = num_classes
 
         self.backbone = backbone
-        # remove fc or linear otherwise ddp will
-        # report unused params
         if hasattr(self.backbone, 'fc'):
+            # remove fc otherwise ddp will
+            # report unused params
             self.backbone.fc = nn.Identity()
-        elif hasattr(self.backbone, 'linear'):
-            self.backbone.linear = nn.Identity()
 
         self.h = h_dict[similarity_measure](feature_size, num_classes)
 

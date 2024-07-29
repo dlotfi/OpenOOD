@@ -419,11 +419,19 @@ def get_network(network_config):
                     checkpoint = checkpoint[network_config.checkpoint_key]
                 net.load_state_dict(checkpoint, strict=True)
             except RuntimeError:
-                # sometimes fc should not be loaded
-                loaded_pth = torch.load(network_config.checkpoint)
-                loaded_pth.pop('fc.weight')
-                loaded_pth.pop('fc.bias')
-                net.load_state_dict(loaded_pth, strict=False)
+                print(
+                    'Could not load model in strict mode. Trying non-strict.')
+                # sometimes 'fc' should not be loaded
+                if 'fc.weight' in checkpoint:
+                    print('"fc" weights were ignored.')
+                    checkpoint.pop('fc.weight')
+                    checkpoint.pop('fc.bias')
+                # and sometimes 'fc' has been saved as 'linear'
+                elif 'linear.weight' in checkpoint:
+                    print('"linear" weights used as "fc".')
+                    checkpoint['fc.weight'] = checkpoint.pop('linear.weight')
+                    checkpoint['fc.bias'] = checkpoint.pop('linear.bias')
+                net.load_state_dict(checkpoint, strict=False)
         print('Model Loading {} Completed!'.format(network_config.name))
 
     if network_config.num_gpus > 1:

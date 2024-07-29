@@ -94,7 +94,7 @@ class ResNet(nn.Module):
         self.layer3 = self._make_layer(block, 256, num_blocks[2], stride=2)
         self.layer4 = self._make_layer(block, 512, num_blocks[3], stride=2)
         self.avgpool = nn.AdaptiveAvgPool2d(1)
-        self.linear = nn.Linear(512 * block.expansion, num_classes)
+        self.fc = nn.Linear(512 * block.expansion, num_classes)
         self.feature_size = 512 * block.expansion
 
     def _make_layer(self, block, planes, num_blocks, stride):
@@ -113,7 +113,7 @@ class ResNet(nn.Module):
         feature5 = self.layer4(feature4)
         feature5 = self.avgpool(feature5)
         feature = feature5.view(feature5.size(0), -1)
-        logits_cls = self.linear(feature)
+        logits_cls = self.fc(feature)
         feature_list = [feature1, feature2, feature3, feature4, feature5]
         if return_feature:
             return logits_cls, feature
@@ -131,16 +131,16 @@ class ResNet(nn.Module):
         feature5 = self.avgpool(feature5)
         feature = feature5.clip(max=threshold)
         feature = feature.view(feature.size(0), -1)
-        logits_cls = self.linear(feature)
+        logits_cls = self.fc(feature)
 
         return logits_cls
 
     def get_fc(self):
-        fc = self.linear
+        fc = self.fc
         return fc.weight.cpu().detach().numpy(), fc.bias.cpu().detach().numpy()
 
     def get_fc_layer(self):
-        return self.linear
+        return self.fc
 
 
 def ResNet18_28x28(num_classes, in_channels=3):
