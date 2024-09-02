@@ -206,8 +206,6 @@ def get_feature_nflow_dataloader(dataset_config: Config):
         loaded_data = load(os.path.join(feat_root, f'{d}.npz'),
                            allow_pickle=True)
         total_feat = torch.from_numpy(loaded_data['feat_list'])
-        # if dataset_config.normalize_feat:
-        #     total_feat = total_feat / total_feat.norm(dim=1, keepdim=True)
         total_labels = loaded_data['label_list']
         if torch.isnan(total_feat).any() or torch.isinf(total_feat).any():
             print('NaN or Inf detected in the feature')

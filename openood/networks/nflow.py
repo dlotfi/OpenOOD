@@ -1,5 +1,6 @@
 import normflows as nf
 import torch
+from normflows.flows import Flow
 
 
 class ClampedMLP(nf.nets.MLP):
@@ -15,7 +16,24 @@ class ClampedMLP(nf.nets.MLP):
         return x
 
 
+class L2Norm(Flow):
+    def __init__(self, eps=1.0e-10):
+        super().__init__()
+        self.eps_cpu = torch.tensor(eps)
+        self.register_buffer('eps', self.eps_cpu)
+
+    def forward(self, z):
+        raise NotImplementedError('Forward pass has not been implemented.')
+
+    def inverse(self, z):
+        norms = torch.norm(z, p=2, dim=1, keepdim=True)
+        z_ = z / (norms + self.eps)
+        log_det = torch.sum(torch.log(norms + self.eps))
+        return z_, log_det
+
+
 def get_normalizing_flow(network_config):
+    normalize_input = network_config.normalize_input
     latent_size = network_config.latent_size
     hidden_size = network_config.hidden_size
     if hidden_size is None:
@@ -37,7 +55,14 @@ def get_normalizing_flow(network_config):
             flows += [nf.flows.MaskedAffineFlow(1 - b, t, s)]
         flows += [nf.flows.ActNorm(latent_size)]
 
+    if normalize_input:
+        flows += [L2Norm()]
+
     q0 = nf.distributions.DiagGaussian(latent_size)
-    # Construct flow model
+    # Note that in inverse method which is applied to the features
+    # extracted from the backbone, the order of the flows is reversed.
+    # ActNorm z-score normalizes (zero mean and unit variance) the input,
+    # using two learnable parameters "mean" and "std" which are initialized
+    # by the statistics of the first batch.
     nfm = nf.NormalizingFlow(q0=q0, flows=flows)
     return nfm

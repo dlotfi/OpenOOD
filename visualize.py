@@ -11,7 +11,7 @@ from numpy import array
 from scipy.stats import skew, kurtosis
 from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler, normalize
 
 from openood.utils import Config
 from openood.utils.config import merge_configs
@@ -175,7 +175,7 @@ def plot_spectrum(datasets: dict,
                                      method=outlier_method,
                                      sigma=outlier_sigma,
                                      keep_ratio_threshold=keep_ratio_thresh)
-    # farood_scores = farood_scores[farood_scores > -5000]
+    # farood_scores = farood_scores[farood_scores > 1000]
     farood_scores = remove_outliers(farood_scores,
                                     method=outlier_method,
                                     sigma=outlier_sigma,
@@ -264,7 +264,8 @@ def draw_tsne_plot(feats_dict, title, output_path, datasets):
     plt.savefig(output_path, bbox_inches='tight')
 
 
-def plot_tsne(datasets: dict, feat_dir: str, out_dir: str, merge_plots=False):
+def plot_tsne(datasets: dict, feat_dir: str, out_dir: str,
+              normalize_feats: bool):
     feat_dir = os.path.normpath(feat_dir)
     out_dir = os.path.normpath(out_dir)
     id_feats, id_feats_flow = load_features(datasets['id'],
@@ -276,12 +277,18 @@ def plot_tsne(datasets: dict, feat_dir: str, out_dir: str, merge_plots=False):
     farood_feats, farood_feats_flow = load_features(datasets['farood'],
                                                     feat_dir,
                                                     n_samples=1000)
-
-    feats_dict = {
-        'farood': farood_feats,
-        'nearood': nearood_feats,
-        'id': id_feats
-    }
+    if normalize_feats:
+        feats_dict = {
+            'farood': normalize(farood_feats, norm='l2', axis=1),
+            'nearood': normalize(nearood_feats, norm='l2', axis=1),
+            'id': normalize(id_feats, norm='l2', axis=1)
+        }
+    else:
+        feats_dict = {
+            'farood': farood_feats,
+            'nearood': nearood_feats,
+            'id': id_feats
+        }
     feats_flow_dict = {
         'farood': farood_feats_flow,
         'nearood': nearood_feats_flow,
@@ -289,71 +296,23 @@ def plot_tsne(datasets: dict, feat_dir: str, out_dir: str, merge_plots=False):
     }
 
     print('Plotting t-SNE for features', flush=True)
-    if merge_plots:
-        feats_dict.update({('flow_' + k): v
-                           for k, v in feats_flow_dict.items()})
-        draw_tsne_plot(feats_dict, 't-SNE for Features of ID and OOD Samples',
-                       f'{out_dir}/tsne_features_all.png', datasets)
+    if normalize_feats:
+        draw_tsne_plot(
+            feats_dict,
+            't-SNE for Normalized Backbone Features of ID and OOD Samples',
+            f'{out_dir}/tsne_features_normalized.png', datasets)
     else:
         draw_tsne_plot(feats_dict,
                        't-SNE for Backbone Features of ID and OOD Samples',
                        f'{out_dir}/tsne_features.png', datasets)
-        draw_tsne_plot(
-            feats_flow_dict,
-            't-SNE for Normalizing Flow Features of ID and OOD Samples',
-            f'{out_dir}/tsne_features_flow.png', datasets)
+    draw_tsne_plot(
+        feats_flow_dict,
+        't-SNE for Normalizing Flow Features of ID and OOD Samples',
+        f'{out_dir}/tsne_features_flow.png', datasets)
 
 
-def plot_tsne_score(datasets: dict,
-                    feat_dir: str,
-                    score_dir: str,
-                    out_dir: str,
-                    outlier_method: str = None,
-                    outlier_sigma=3.0,
-                    keep_ratio_thresh=0.5,
-                    log_scale=False,
-                    colored_id=False):
-    feat_dir = os.path.normpath(feat_dir)
-    score_dir = os.path.normpath(score_dir)
-    out_dir = os.path.normpath(out_dir)
-    id_feats, _, id_scores = load_features(datasets['id'],
-                                           feat_dir,
-                                           score_dir,
-                                           n_samples=1000)
-    nearood_feats, _, nearood_scores = load_features(datasets['nearood'],
-                                                     feat_dir,
-                                                     score_dir,
-                                                     n_samples=1000)
-    farood_feats, _, farood_scores = load_features(datasets['farood'],
-                                                   feat_dir,
-                                                   score_dir,
-                                                   n_samples=1000)
-
-    id_scores, id_feats = remove_outliers(id_scores, id_feats, outlier_method,
-                                          outlier_sigma, keep_ratio_thresh)
-    nearood_scores, nearood_feats = remove_outliers(nearood_scores,
-                                                    nearood_feats,
-                                                    outlier_method,
-                                                    outlier_sigma,
-                                                    keep_ratio_thresh)
-    farood_scores, farood_feats = remove_outliers(farood_scores, farood_feats,
-                                                  outlier_method,
-                                                  outlier_sigma,
-                                                  keep_ratio_thresh)
-
-    feats_dict = {
-        'farood': farood_feats,
-        'nearood': nearood_feats,
-        'id': id_feats,
-    }
-    scores_dict = {
-        'farood': farood_scores,
-        'nearood': nearood_scores,
-        'id': id_scores,
-    }
-
-    print('Plotting t-SNE for features', flush=True)
-
+def draw_tsne_score_plot(feats_dict, scores_dict, title, output_path,
+                         colored_id, log_scale, datasets):
     plt.figure(figsize=(10, 8), dpi=300)
     tsne_feats_dict = tsne_compute(feats_dict)
     excluded_id_key = 'id' if not colored_id else 'something_else'
@@ -395,47 +354,116 @@ def plot_tsne_score(datasets: dict,
     legend = plt.legend(loc='upper left', fontsize='small')
     for handle in legend.legend_handles:
         handle.set_color('black')
-    plt.title('t-SNE for Backbone Features of ID and OOD Samples')
-    plt.savefig(f'{out_dir}/tsne_features_scores.png', bbox_inches='tight')
+    plt.title(title)
+    plt.savefig(output_path, bbox_inches='tight')
+
+
+def plot_tsne_score(datasets: dict,
+                    feat_dir: str,
+                    score_dir: str,
+                    out_dir: str,
+                    normalize_feats: bool,
+                    outlier_method: str = None,
+                    outlier_sigma=3.0,
+                    keep_ratio_thresh=0.5,
+                    log_scale=False,
+                    colored_id=False):
+    feat_dir = os.path.normpath(feat_dir)
+    score_dir = os.path.normpath(score_dir)
+    out_dir = os.path.normpath(out_dir)
+    id_feats, _, id_scores = load_features(datasets['id'],
+                                           feat_dir,
+                                           score_dir,
+                                           n_samples=1000)
+    nearood_feats, _, nearood_scores = load_features(datasets['nearood'],
+                                                     feat_dir,
+                                                     score_dir,
+                                                     n_samples=1000)
+    farood_feats, _, farood_scores = load_features(datasets['farood'],
+                                                   feat_dir,
+                                                   score_dir,
+                                                   n_samples=1000)
+
+    id_scores, id_feats = remove_outliers(id_scores, id_feats, outlier_method,
+                                          outlier_sigma, keep_ratio_thresh)
+    nearood_scores, nearood_feats = remove_outliers(nearood_scores,
+                                                    nearood_feats,
+                                                    outlier_method,
+                                                    outlier_sigma,
+                                                    keep_ratio_thresh)
+    farood_scores, farood_feats = remove_outliers(farood_scores, farood_feats,
+                                                  outlier_method,
+                                                  outlier_sigma,
+                                                  keep_ratio_thresh)
+
+    if normalize_feats:
+        feats_dict = {
+            'farood': normalize(farood_feats, norm='l2', axis=1),
+            'nearood': normalize(nearood_feats, norm='l2', axis=1),
+            'id': normalize(id_feats, norm='l2', axis=1)
+        }
+    else:
+        feats_dict = {
+            'farood': farood_feats,
+            'nearood': nearood_feats,
+            'id': id_feats,
+        }
+    scores_dict = {
+        'farood': farood_scores,
+        'nearood': nearood_scores,
+        'id': id_scores,
+    }
+
+    print('Plotting t-SNE for features', flush=True)
+    if normalize_feats:
+        draw_tsne_score_plot(
+            feats_dict, scores_dict,
+            't-SNE for Normalized Backbone Features of ID and OOD Samples',
+            f'{out_dir}/tsne_features_scores_normalized.png', colored_id,
+            log_scale, datasets)
+    else:
+        draw_tsne_score_plot(
+            feats_dict, scores_dict,
+            't-SNE for Backbone Features of ID and OOD Samples',
+            f'{out_dir}/tsne_features_scores.png', colored_id, log_scale,
+            datasets)
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--config', dest='config', nargs='+', required=True)
     parser.add_argument('--score_dir',
-                        help='path to the scores directory',
-                        required=True)
+                        required=True,
+                        help='path to the scores directory')
     parser.add_argument('--feat_dir',
-                        help='path to the features directory',
-                        required=True)
+                        required=True,
+                        help='path to the features directory')
     parser.add_argument('--out_dir',
-                        help='path to the output directory',
-                        required=True)
+                        required=True,
+                        help='path to the output directory')
     parser.add_argument(
         '--log_scale',
         action='store_true',
-        help='enable log scale for spectrum and tsne-score plots',
-        required=False)
+        help='enable log scale for spectrum and tsne-score plots')
     parser.add_argument(
         '--outlier_method',
         default=None,
-        help='the method for outlier removal (auto, zscore, iqr, mad)',
-        required=False)
+        help='the method for outlier removal (auto, zscore, iqr, mad)')
     parser.add_argument('--outlier_sigma',
                         type=float,
                         default=3,
-                        help='the sigma for outlier removal',
-                        required=False)
+                        help='the sigma for outlier removal')
     parser.add_argument('--outlier_thresh',
                         type=float,
                         default=0.5,
-                        help='the keep ratio threshold for outlier removal',
-                        required=False)
+                        help='the keep ratio threshold for outlier removal')
     parser.add_argument('--seed',
                         type=int,
                         default=0,
-                        help='seed for random number generation',
-                        required=False)
+                        help='seed for random number generation')
+    parser.add_argument('--normalize_feats',
+                        action='store_true',
+                        help='Draw t-SNE plots with L2 normalized features')
     opt, unknown_args = parser.parse_known_args()
     config = merge_configs(*[Config(path) for path in opt.config])
     # set random seed
@@ -449,7 +477,7 @@ if __name__ == '__main__':
     }
     plot_spectrum(datasets, opt.score_dir, opt.out_dir, opt.outlier_method,
                   opt.outlier_sigma, opt.outlier_thresh, opt.log_scale)
-    plot_tsne(datasets, opt.feat_dir, opt.out_dir)
+    plot_tsne(datasets, opt.feat_dir, opt.out_dir, opt.normalize_feats)
     plot_tsne_score(datasets, opt.feat_dir, opt.score_dir, opt.out_dir,
-                    opt.outlier_method, opt.outlier_sigma, opt.outlier_thresh,
-                    opt.log_scale)
+                    opt.normalize_feats, opt.outlier_method, opt.outlier_sigma,
+                    opt.outlier_thresh, opt.log_scale)

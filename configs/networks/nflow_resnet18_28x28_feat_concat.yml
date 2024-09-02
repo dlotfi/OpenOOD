@@ -16,6 +16,8 @@ network:
     n_flows: 4
     # The clamp value for the MLPs
     clamp_value: 15.0
+    # Normalize the input
+    normalize_input: False
 
   # network used for feature extraction and aggregation
   backbone:

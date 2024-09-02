@@ -12,6 +12,7 @@ python main.py \
     --num_workers 8 \
     --network.pretrained True \
     --network.checkpoint "./results/organamnist_nflow_nflow_e100_lr0.0001_default/s${SEED}/best_nflow.ckpt" None \
+    --network.nflow.normalize_input True \
     --network.backbone.pretrained False \
     --network.backbone.encoder.pretrained True \
     --network.backbone.encoder.checkpoint "./results/organamnist_resnet18_28x28/s${SEED}/resnet18_28_1.pth" \
