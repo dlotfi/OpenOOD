@@ -23,7 +23,9 @@ python main.py \
     configs/preprocessors/base_preprocessor.yml \
     configs/postprocessors/nflow.yml \
     --dataset.feat_root "./results/organamnist_resnet18_28x28_feat_extract_nflow_default/s${SEED}" \
+    --network.nflow.normalize_input True \
     --network.backbone.pretrained True \
     --network.backbone.checkpoint "./results/organamnist_resnet18_28x28/s${SEED}/resnet18_28_1.pth" \
     --network.backbone.checkpoint_key "net" \
+    --optimizer.weight_decay 0.0001 \
     --seed ${SEED}
