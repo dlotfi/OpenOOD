@@ -35,17 +35,20 @@ if __name__ == '__main__':
         args.datasets = medmnist.INFO.keys()
     os.makedirs(args.imglist_dir, exist_ok=True)
 
+    postfix = f'_{args.size}' if args.size != 28 else ''
     for flag in args.datasets:
-        folder = f'{args.save_dir}/{flag}'
+        ext = 'gif' if flag.endswith('3d') else 'png'
+        flag_xt = f'{flag}{postfix}'
+        folder = f'{args.save_dir}/{flag}{postfix}'
         os.makedirs(folder, exist_ok=True)
         for split in ['train', 'val', 'test']:
-            print(f'Saving {flag} {split}...')
+            print(f'Saving {flag_xt} {split}...')
             dataset = getattr(medmnist, medmnist.INFO[flag]['python_class'])(
                 split=split, download=True, root=folder, size=args.size)
-            if not os.path.exists(f'{folder}/{flag}.csv'):
-                dataset.save(folder, 'png')
-        imglists = convert_to_imglists(f'{flag}/{flag}',
-                                       f'{folder}/{flag}.csv')
+            if not os.path.exists(f'{folder}/{flag_xt}.csv'):
+                dataset.save(folder, ext)
+        imglists = convert_to_imglists(f'{flag_xt}/{flag_xt}',
+                                       f'{folder}/{flag_xt}.csv')
         for split, imglist in imglists.items():
-            with open(f'{args.imglist_dir}/{split}_{flag}.txt', 'w') as f:
+            with open(f'{args.imglist_dir}/{split}_{flag_xt}.txt', 'w') as f:
                 f.write('\n'.join(imglist) + '\n')
