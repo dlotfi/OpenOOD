@@ -227,6 +227,11 @@ def load_features(datasets: List[str],
         n_samples_dataset = \
             int(sample_rate * total_samples_dataset) if n_samples is None \
             else int(n_samples * total_samples_dataset / total_samples)
+        if n_samples_dataset > total_samples_dataset:
+            print(f'WARNING: Number of samples to select '
+                  f'({n_samples_dataset}) is greater than the total number '
+                  f'of samples in the dataset ({total_samples_dataset}).')
+            n_samples_dataset = total_samples_dataset
 
         index_select = np.random.choice(total_samples_dataset,
                                         n_samples_dataset,
@@ -441,14 +446,14 @@ if __name__ == '__main__':
     parser.add_argument('--out_dir',
                         required=True,
                         help='path to the output directory')
-    parser.add_argument(
-        '--log_scale',
-        action='store_true',
-        help='enable log scale for spectrum and tsne-score plots')
-    parser.add_argument(
-        '--outlier_method',
-        default=None,
-        help='the method for outlier removal (auto, zscore, iqr, mad)')
+    parser.add_argument('--log_scale',
+                        action='store_true',
+                        help='enable log scale for spectrum '
+                        'and tsne-score plots')
+    parser.add_argument('--outlier_method',
+                        default=None,
+                        help='the method for outlier removal '
+                        '(auto, zscore, iqr, mad)')
     parser.add_argument('--outlier_sigma',
                         type=float,
                         default=3,
