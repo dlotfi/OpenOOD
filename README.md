@@ -55,6 +55,13 @@ Comments, issues, contributions, and collaborations are all welcomed!
 ## Get Started
 
 ### v1.5 (up-to-date)
+#### Creating Environment
+```bash
+conda create -n openood python=3.8.19
+conda actviate openood
+pip install torch==2.3.1 torchvision==0.18.1 --index-url https://download.pytorch.org/whl/cu121
+```
+
 #### Installation
 OpenOOD now supports installation via pip.
 ```
