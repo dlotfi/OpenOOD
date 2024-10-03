@@ -41,14 +41,16 @@ if __name__ == '__main__':
         flag_xt = f'{flag}{postfix}'
         folder = f'{args.save_dir}/{flag}{postfix}'
         os.makedirs(folder, exist_ok=True)
+        csv_path = f'{folder}/{flag_xt}.csv'
+        # dataset.save append to csv file, so remove it first
+        if os.path.exists(csv_path):
+            os.remove(csv_path)
         for split in ['train', 'val', 'test']:
             print(f'Saving {flag_xt} {split}...')
             dataset = getattr(medmnist, medmnist.INFO[flag]['python_class'])(
                 split=split, download=True, root=folder, size=args.size)
-            if not os.path.exists(f'{folder}/{flag_xt}.csv'):
-                dataset.save(folder, ext)
-        imglists = convert_to_imglists(f'{flag_xt}/{flag_xt}',
-                                       f'{folder}/{flag_xt}.csv')
+            dataset.save(folder, ext)
+        imglists = convert_to_imglists(f'{flag_xt}/{flag_xt}', csv_path)
         for split, imglist in imglists.items():
             with open(f'{args.imglist_dir}/{split}_{flag_xt}.txt', 'w') as f:
                 f.write('\n'.join(imglist) + '\n')

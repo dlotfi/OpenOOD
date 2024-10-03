@@ -1,4 +1,4 @@
-# sh ./scripts/download/dowanload_medmnist.sh
+# sh ./scripts/download/dowanload_medmnist_plus.sh
 
 python ./scripts/download/download_medmnist.py \
 	--datasets 'organamnist' 'organcmnist' 'organsmnist' 'pneumoniamnist' \
@@ -7,10 +7,3 @@ python ./scripts/download/download_medmnist.py \
 	--save_dir './data/medmnist_plus' \
 	--imglist_dir './data/benchmark_imglist/medmnist_plus' \
 	--size 224
-
-#python ./scripts/download/download_medmnist.py \
-#	--datasets 'organmnist3d' 'nodulemnist3d' 'fracturemnist3d' \
-#	           'adrenalmnist3d' 'vesselmnist3d' 'synapsemnist3d' \
-#	--save_dir './data/medmnist3d' \
-#	--imglist_dir './data/benchmark_imglist/medmnist3d' \
-#	--size 64
