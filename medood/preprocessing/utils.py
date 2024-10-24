@@ -1,10 +1,16 @@
 import os
 import random
-from collections import namedtuple
-from re import Pattern
-from typing import Union, List
+from dataclasses import dataclass
+from re import Pattern, Match
+from typing import Union, List, TypeVar
 
-FileMatch = namedtuple('FileMatch', ['FilePath', 'Match'])
+T = TypeVar('T')
+
+
+@dataclass
+class FileMatch:
+    FilePath: str
+    Match: Match[str]
 
 
 def find_all_files(base_dir: str,
@@ -29,7 +35,7 @@ def find_all_files(base_dir: str,
     return matching_files
 
 
-def random_sample(lst: List, sample_size: int) -> List:
+def random_sample(lst: List[T], sample_size: int) -> List[T]:
     if sample_size is None or sample_size >= len(lst):
         return lst
     sampled_indices = sorted(random.sample(range(len(lst)), sample_size))

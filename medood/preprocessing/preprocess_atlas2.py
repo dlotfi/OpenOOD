@@ -27,12 +27,12 @@ class ATLAS2_PreProcessor(BaseBrainPreProcessor):
 
         # Pair each file with a target file name
         paired_files = []
-        for file, match in candidate_files:
-            split_part = match.group(1)[:-3]  # Remove the last 'ing' part
-            sub_part = match.group(2)
+        for file in candidate_files:
+            split_part = file.Match.group(1)[:-3]  # Remove the last 'ing' part
+            sub_part = file.Match.group(2)
             output_name = f'ATLAS2_{split_part}_{sub_part}_T1.nii.gz'
             output_path = os.path.join(self.cfg.output_dir, output_name)
-            paired_files.append(FilePair(file, output_path))
+            paired_files.append(FilePair(file.FilePath, output_path))
 
         self.logger.info(f'Sampled {len(paired_files)} files.')
         return paired_files
@@ -40,13 +40,14 @@ class ATLAS2_PreProcessor(BaseBrainPreProcessor):
     def run(self):
         self.logger.info('Start preprocessing ATLAS2 dataset')
         self.logger.info(self.cfg)
+        # 1. Find all files in both 'Train' split and sample randomly from them
         sampled_files = self.find_and_sample_files(split='Train')
-        processed_files = self.process_brain_mris(sampled_files)
-        # todo: Questions:
-        # 1. Normalize the images?
-        # 2. Sample from Train, Test or both?
-        self.log_processed_files(processed_files)
+        # 2. Register to SRI24, skull-strip, and normalize all sampled images
+        processed_files = self.process_brain_images(sampled_files)
+        self.save_processed_files(processed_files)
         self.logger.info('ATLAS2 dataset preprocessing completed.')
+        # Questions:
+        # * Which split: Train, Test or both?
 
 
 if __name__ == '__main__':

@@ -29,12 +29,13 @@ class WMH2017_PreProcessor(BaseBrainPreProcessor):
 
         # Pair each file with a target file name
         paired_files = []
-        for file, match in candidate_files:
-            split_part = 'Train' if match.group(1) == 'training' else 'Test'
-            number = match.group(2)
+        for file in candidate_files:
+            split_part = \
+                'Train' if file.Match.group(1) == 'training' else 'Test'
+            number = file.Match.group(2)
             output_name = f'WMH2017_{split_part}_{number}_T1.nii.gz'
             output_path = os.path.join(self.cfg.output_dir, output_name)
-            paired_files.append(FilePair(file, output_path))
+            paired_files.append(FilePair(file.FilePath, output_path))
 
         self.logger.info(f'Sampled {len(paired_files)} files.')
         return paired_files
@@ -42,15 +43,16 @@ class WMH2017_PreProcessor(BaseBrainPreProcessor):
     def run(self):
         self.logger.info('Start preprocessing WMH2017 dataset')
         self.logger.info(self.cfg)
+        # 1. Find all files in both 'Train' split and sample randomly from them
         sampled_files = self.find_and_sample_files(split='Train')
-        processed_files = self.process_brain_mris(sampled_files)
-        # todo: Questions:
-        # 1. Normalize the images?
-        # 2. Which folder? 'orig' or 'pre'?
-        # 3. Which file? 3DT1 or T1?
-        # 4. Include 'GE1T5' and 'Philips_VU .PETMR_01'?
-        self.log_processed_files(processed_files)
+        # 2. Register to SRI24, skull-strip, and normalize all sampled images
+        processed_files = self.process_brain_images(sampled_files)
+        self.save_processed_files(processed_files)
         self.logger.info('WMH2017 dataset preprocessing completed.')
+        # Questions:
+        # * Which folder: 'orig' or 'pre'?
+        # * Which file: 3DT1 or T1?
+        # * Include 'GE1T5' and 'Philips_VU .PETMR_01'?
 
 
 if __name__ == '__main__':

@@ -4,20 +4,21 @@ from typing import List
 import pandas as pd
 import pydicom
 
-from preprocessor_base import BaseDICOMPreProcessor, FilePair
-from preprocessor_config import PreProcessorConfig
+from preprocessor_base import (BaseDICOMPreProcessor, BaseBrainPreProcessor,
+                               FilePair)
+from preprocessor_config import PreProcessorBrainConfig
 from utils import random_sample
 
 
-class CQ500_PreProcessor(BaseDICOMPreProcessor):
+class CQ500_PreProcessor(BaseDICOMPreProcessor, BaseBrainPreProcessor):
     def find_and_sample_dicom_series(self) -> List[FilePair]:
         csv_path = os.path.join(self.cfg.base_dir, '../reads.csv')
         df = pd.read_csv(csv_path)
 
         # Filter rows where at least two out of three columns are 1
         df_filtered = df[(df[['R1:ICH', 'R2:ICH', 'R3:ICH']].sum(axis=1) >= 2)
-                         or (df[['R1:Fracture', 'R2:Fracture', 'R3:Fracture'
-                                 ]].sum(axis=1) >= 2)]
+                         | (df[['R1:Fracture', 'R2:Fracture', 'R3:Fracture']].
+                            sum(axis=1) >= 2)]
 
         candidate_dicom_series = []
 
@@ -72,20 +73,29 @@ class CQ500_PreProcessor(BaseDICOMPreProcessor):
     def run(self):
         self.logger.info('Start preprocessing CQ500 dataset')
         self.logger.info(self.cfg)
+        # 1. Find all thin plain DICOM series having intracranial
+        #    hemorrhage (ICH) cranial fractures and sample randomly from them
         sampled_dicom_series = self.find_and_sample_dicom_series()
+        # 2. Convert all sampled series to NIfTI while applying windowing
         processed_files = self.convert_dicom_series_to_nifti(
-            sampled_dicom_series)
-        # todo: Questions:
-        # 1. Registration and skull-stripping? How?
-        # 2. Any conversion from HU? Normalize the images?
-        # 3. Which batch (B1 or B2)? Which folder? Filter on ICH and Fracture?
-        # 4. Resample to 1mm isotropic and center crop to 240x240x155?
-        self.log_processed_files(processed_files)
+            sampled_dicom_series, apply_windowing=True)
+        # 3. Register to SRI24, skull-strip, and normalize all sampled images
+        brain_process_file_pairs = [
+            FilePair(f.Output, f.Output) for f in processed_files
+        ]
+        brain_process_file_pairs = self.process_brain_images(
+            brain_process_file_pairs)
+        self.save_processed_files(processed_files)
         self.logger.info('CQ500 dataset preprocessing completed.')
+        # Questions:
+        # * Registration and skull-stripping? How?
+        # * Apply windowing?
+        # * Which folder?
+        # * Filter on ICH and Fracture?
 
 
 if __name__ == '__main__':
-    cfg = PreProcessorConfig()
+    cfg = PreProcessorBrainConfig()
     cfg.parse_args()
     preprocessor = CQ500_PreProcessor(cfg)
     preprocessor.run()

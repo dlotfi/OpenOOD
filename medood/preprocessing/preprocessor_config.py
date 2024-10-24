@@ -21,6 +21,9 @@ class PreProcessorConfig:
                                  type=int,
                                  default=None,
                                  help='Random seed for reproducibility')
+        self.parser.add_argument('--skip_existing',
+                                 action='store_true',
+                                 help='Skip re-processing existing files')
         self._args = None
 
     def parse_args(self):
@@ -47,7 +50,4 @@ class PreProcessorBrainConfig(PreProcessorConfig):
         super().__init__()
         self.parser.add_argument('--use_gpu',
                                  action='store_true',
-                                 help='Use GPU for processing')
-        self.parser.add_argument('--skip_existing',
-                                 action='store_true',
-                                 help='Skip re-processing existing files')
+                                 help='Use GPU for brain extraction')

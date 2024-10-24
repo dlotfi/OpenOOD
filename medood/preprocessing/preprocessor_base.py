@@ -1,6 +1,6 @@
 import os
 import random
-from collections import namedtuple
+from dataclasses import dataclass, fields
 from datetime import datetime
 
 import logging
@@ -9,7 +9,9 @@ from abc import ABC, abstractmethod
 from typing import List, Tuple
 
 import SimpleITK as sitk
+import numpy as np
 import pandas as pd
+import pydicom
 from auxiliary.normalization.percentile_normalizer import PercentileNormalizer
 from brainles_preprocessing.brain_extraction import HDBetExtractor
 from brainles_preprocessing.modality import Modality
@@ -18,7 +20,11 @@ from brainles_preprocessing.registration import ANTsRegistrator
 
 from preprocessor_config import PreProcessorConfig, PreProcessorBrainConfig
 
-FilePair = namedtuple('FilePair', ['Original', 'Processed'])
+
+@dataclass
+class FilePair:
+    Source: str
+    Output: str
 
 
 class BasePreProcessor(ABC):
@@ -26,8 +32,15 @@ class BasePreProcessor(ABC):
         self.cfg = cfg
         os.makedirs(cfg.output_dir, exist_ok=True)
         self._setup_logger()
+        self._normalizer = PercentileNormalizer(
+            lower_percentile=0.1,
+            upper_percentile=99.9,
+            lower_limit=0,
+            upper_limit=1,
+        )
         if cfg.seed is not None:
             random.seed(cfg.seed)
+            np.random.seed(cfg.seed)
 
     def _setup_logger(self, level=logging.DEBUG):
         preprocessor_name = self.__class__.__name__
@@ -51,13 +64,20 @@ class BasePreProcessor(ABC):
         self.logger.addHandler(file_handler)
         self.logger.setLevel(level)
 
-    def log_processed_files(self, processed_files: List[namedtuple]) -> None:
+    def save_processed_files(self, processed_files: List[FilePair]) -> None:
         if not processed_files:
             self.logger.warning('No processed files to log.')
             return
-        csv_path = os.path.join(self.log_dir, 'processed_files.csv')
-        df = pd.DataFrame(processed_files, columns=processed_files[0]._fields)
+        csv_path = os.path.join(self.cfg.output_dir, 'processed_files.csv')
+        df = pd.DataFrame(
+            processed_files,
+            columns=[f.name for f in fields(processed_files[0].__class__)])
         df.to_csv(csv_path, index=False)
+
+    def _normalize_image(self, image: sitk.Image) -> sitk.Image:
+        image_array = sitk.GetArrayFromImage(image)
+        normalized_array = self._normalizer.normalize(image_array)
+        return sitk.GetImageFromArray(normalized_array)
 
     @abstractmethod
     def run(self):
@@ -67,57 +87,51 @@ class BasePreProcessor(ABC):
 class BaseBrainPreProcessor(BasePreProcessor, ABC):
     def __init__(self, cfg: PreProcessorBrainConfig):
         super().__init__(cfg)
-        self.registrator = ANTsRegistrator()
-        self.brain_extractor = HDBetExtractor()
-        self.percentile_normalizer = PercentileNormalizer(
-            lower_percentile=0.1,
-            upper_percentile=99.9,
-            lower_limit=0,
-            upper_limit=1,
-        )
+        self._registrator = ANTsRegistrator()
+        self._brain_extractor = HDBetExtractor()
 
-    def process_brain_mris(self,
-                           source_output_pairs: List[FilePair],
-                           skull_stripping: bool = True) -> List[FilePair]:
+    def process_brain_images(self,
+                             source_output_pairs: List[FilePair],
+                             skull_stripping: bool = True) -> List[FilePair]:
         processed_pairs = []
         self.logger.info('Registering, Skull-stripping, and Normalizing MRIs')
-        for source_file, output_file in source_output_pairs:
-            if os.path.exists(output_file) and self.cfg.skip_existing:
+        for pair in source_output_pairs:
+            if os.path.exists(pair.Output) and self.cfg.skip_existing:
                 self.logger.info(
-                    f'Skipping re-processing the existing file: {output_file}')
-                processed_pairs.append(FilePair(source_file, output_file))
+                    f'Skipping re-processing the existing file: {pair.Output}')
+                processed_pairs.append(pair)
                 continue
             try:
                 if skull_stripping:
                     center = Modality(
                         modality_name='T1',
-                        input_path=source_file,
-                        normalized_bet_output_path=output_file,
+                        input_path=pair.Source,
+                        normalized_bet_output_path=pair.Output,
                         atlas_correction=True,
-                        normalizer=self.percentile_normalizer,
+                        normalizer=self._normalizer,
                     )
                 else:
                     center = Modality(
                         modality_name='T1',
-                        input_path=source_file,
-                        normalized_skull_output_path=output_file,
+                        input_path=pair.Source,
+                        normalized_skull_output_path=pair.Output,
                         atlas_correction=True,
-                        normalizer=self.percentile_normalizer,
+                        normalizer=self._normalizer,
                     )
                 # By default, registers the brains to SRI24 atlas
                 preprocessor = Preprocessor(
                     center_modality=center,
                     moving_modalities=[],
-                    registrator=self.registrator,
-                    brain_extractor=self.brain_extractor,
+                    registrator=self._registrator,
+                    brain_extractor=self._brain_extractor,
                     use_gpu=self.cfg.use_gpu,
                 )
                 preprocessor.run(log_file=self.log_file)
-                processed_pairs.append(FilePair(source_file, output_file))
-                self.logger.info(f"Successfully processed '{source_file}'"
-                                 f" to '{output_file}'")
+                processed_pairs.append(pair)
+                self.logger.info(f"Successfully processed '{pair.Source}'"
+                                 f" to '{pair.Output}'")
             except Exception as e:
-                self.logger.error(f"Error processing '{source_file}': {e}")
+                self.logger.error(f"Error processing '{pair.Source}': {e}")
         self.logger.info(f'{len(processed_pairs)} MRIs have been'
                          f' registered, skull-stripped, and normalized.')
 
@@ -125,14 +139,8 @@ class BaseBrainPreProcessor(BasePreProcessor, ABC):
 
 
 class BaseDICOMPreProcessor(BasePreProcessor, ABC):
-    def _dicom_to_nifti(self, dicom_dir: str, output_nifti: str) -> List[str]:
-        """Convert all DICOM series in a directory to NIfTI files.
-
-        Parameters:
-        dicom_dir (str): Directory containing the DICOM series.
-        output_nifti (str): Path to save the output NIfTI file.
-        """
-
+    def _dicom_to_nifti(self, dicom_dir: str, output_nifti: str,
+                        apply_windowing: bool, normalize: bool) -> List[str]:
         # Read the DICOM series
         reader = sitk.ImageSeriesReader()
         series_ids = reader.GetGDCMSeriesIDs(dicom_dir)
@@ -153,6 +161,23 @@ class BaseDICOMPreProcessor(BasePreProcessor, ABC):
             # Load the DICOM series into a SimpleITK image
             image = reader.Execute()
 
+            if apply_windowing:
+                # Read the first DICOM file to get the metadata
+                dicom_file = pydicom.dcmread(dicom_series[0])
+                window_center = float(dicom_file.WindowCenter)
+                window_width = float(dicom_file.WindowWidth)
+                image = sitk.IntensityWindowing(
+                    image, window_center - window_width / 2,
+                    window_center + window_width / 2)
+                self.logger.info(
+                    f'Applied windowing ({window_center}, {window_width})'
+                    f" to series {series_id} in '{dicom_dir}'.")
+
+            if normalize:
+                image = self._normalize_image(image)
+                self.logger.info(
+                    f"Normalized series {series_id} in '{dicom_dir}'.")
+
             # Create a NIfTI file name based on the series ID
             if len(series_ids) > 1:
                 output_nifti = output_nifti.replace('.nii.gz',
@@ -160,7 +185,7 @@ class BaseDICOMPreProcessor(BasePreProcessor, ABC):
 
             # Write to NIfTI format
             sitk.WriteImage(image, output_nifti)
-            self.logger.info(f'Series {series_id} converted'
+            self.logger.info(f"Series {series_id} in '{dicom_dir}' converted"
                              f" successfully to '{output_nifti}'")
             output_niftis.append(output_nifti)
 
@@ -168,22 +193,26 @@ class BaseDICOMPreProcessor(BasePreProcessor, ABC):
 
     def convert_dicom_series_to_nifti(
             self,
-            source_dicom_output_nifti_pairs: List[FilePair]) -> List[FilePair]:
+            source_dicom_output_nifti_pairs: List[FilePair],
+            apply_windowing: bool = False,
+            normalize: bool = False) -> List[FilePair]:
         self.logger.info('Converting DICOM series to NIfTI')
         processed_pairs = []
-        for source_dicom, output_file in source_dicom_output_nifti_pairs:
+        for pair in source_dicom_output_nifti_pairs:
             try:
                 output_nifti_files = self._dicom_to_nifti(
-                    source_dicom, output_file)
+                    pair.Source, pair.Output, apply_windowing, normalize)
                 for nifti_file in output_nifti_files:
-                    processed_pairs.append(FilePair(source_dicom, nifti_file))
+                    processed_pairs.append(FilePair(pair.Source, nifti_file))
             except Exception as e:
                 self.logger.error(
-                    f"Error converting '{source_dicom}' to NifTi: {e}")
+                    f"Error converting '{pair.Source}' to NifTi: {e}")
         self.logger.info(f'{len(processed_pairs)} DICOM series'
                          f' have been converted to NIfTI.')
         return processed_pairs
 
+
+class BaseNonBrainPreProcessor(BasePreProcessor, ABC):
     def _resample_and_crop(self, input_path: str, output_path: str,
                            target_size: Tuple, target_spacing: Tuple) -> None:
         # Read the input image

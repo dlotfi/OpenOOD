@@ -26,12 +26,12 @@ class LUMIERE_PreProcessor(BaseBrainPreProcessor):
 
         # Pair each file with a target file name
         paired_files = []
-        for file, match in candidate_files:
-            number = match.group(1)
-            split_part = match.group(2)
+        for file in candidate_files:
+            number = file.Match.group(1)
+            split_part = file.Match.group(2)
             output_name = f'LUMIERE_{number}_{split_part}_T1.nii.gz'
             output_path = os.path.join(self.cfg.output_dir, output_name)
-            paired_files.append(FilePair(file, output_path))
+            paired_files.append(FilePair(file.FilePath, output_path))
 
         self.logger.info(f'Sampled {len(paired_files)} files.')
         return paired_files
@@ -39,15 +39,17 @@ class LUMIERE_PreProcessor(BaseBrainPreProcessor):
     def run(self):
         self.logger.info('Start preprocessing LUMIERE dataset')
         self.logger.info(self.cfg)
+        # 1. Find all files from 'week-000' or 'week-000-1' folders
+        #    and sample randomly from them
         sampled_files = self.find_and_sample_files(
             splits=['week-000', 'week-000-1'])
-        processed_files = self.process_brain_mris(sampled_files,
-                                                  skull_stripping=False)
-        # todo: Questions:
-        # 1. Normalize the images?
-        # 2. Which folder? 'week-000' and 'week-000-1'?
-        self.log_processed_files(processed_files)
+        # 2. Register to SRI24, and normalize all sampled images
+        processed_files = self.process_brain_images(sampled_files,
+                                                    skull_stripping=False)
+        self.save_processed_files(processed_files)
         self.logger.info('LUMIERE dataset preprocessing completed.')
+        # Questions:
+        # * Which folder: 'week-000' and 'week-000-1'?
 
 
 if __name__ == '__main__':
