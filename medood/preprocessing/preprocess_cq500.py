@@ -16,9 +16,8 @@ class CQ500_PreProcessor(BaseDICOMPreProcessor, BaseBrainPreProcessor):
         df = pd.read_csv(csv_path)
 
         # Filter rows where at least two out of three columns are 1
-        df_filtered = df[(df[['R1:ICH', 'R2:ICH', 'R3:ICH']].sum(axis=1) >= 2)
-                         | (df[['R1:Fracture', 'R2:Fracture', 'R3:Fracture']].
-                            sum(axis=1) >= 2)]
+        df_filtered = df[(df[['R1:ICH', 'R2:ICH', 'R3:ICH']].sum(1) >= 2) | (
+            df[['R1:Fracture', 'R2:Fracture', 'R3:Fracture']].sum(1) >= 2)]
 
         candidate_dicom_series = []
 
@@ -83,7 +82,7 @@ class CQ500_PreProcessor(BaseDICOMPreProcessor, BaseBrainPreProcessor):
         brain_process_file_pairs = [
             FilePair(f.Output, f.Output) for f in processed_files
         ]
-        brain_process_file_pairs = self.process_brain_images(
+        brain_process_file_pairs = self.register_skullstrip_normalize_images(
             brain_process_file_pairs)
         self.save_processed_files(processed_files)
         self.logger.info('CQ500 dataset preprocessing completed.')

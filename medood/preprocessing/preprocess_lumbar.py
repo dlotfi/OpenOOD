@@ -45,8 +45,7 @@ class LUMBAR_PreProcessor(BaseDICOMPreProcessor, BaseNonBrainPreProcessor):
         # 2. Convert all sampled series to NIfTI while normalizing them
         processed_files = self.convert_dicom_series_to_nifti(
             sampled_dicom_series, normalize=True)
-        # 3. Resample all volumes to 1mm x 1mm x 1mm isotropic and
-        #    center crop a 240 x 240 x 155 volume
+        # 3. Resample all volumes to 1mm isotropic and center crop
         resampled_files = self.resample_and_center_crop_files(
             [f.Output for f in processed_files])
         processed_files = [

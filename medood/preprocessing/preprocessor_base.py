@@ -64,11 +64,14 @@ class BasePreProcessor(ABC):
         self.logger.addHandler(file_handler)
         self.logger.setLevel(level)
 
-    def save_processed_files(self, processed_files: List[FilePair]) -> None:
+    def save_processed_files(self,
+                             processed_files: List[FilePair],
+                             csv_path: str = None) -> None:
         if not processed_files:
             self.logger.warning('No processed files to log.')
             return
-        csv_path = os.path.join(self.cfg.output_dir, 'processed_files.csv')
+        if not csv_path:
+            csv_path = os.path.join(self.cfg.output_dir, 'processed_files.csv')
         df = pd.DataFrame(
             processed_files,
             columns=[f.name for f in fields(processed_files[0].__class__)])
@@ -90,51 +93,100 @@ class BaseBrainPreProcessor(BasePreProcessor, ABC):
         self._registrator = ANTsRegistrator()
         self._brain_extractor = HDBetExtractor()
 
-    def process_brain_images(self,
-                             source_output_pairs: List[FilePair],
-                             skull_stripping: bool = True) -> List[FilePair]:
-        processed_pairs = []
-        self.logger.info('Registering, Skull-stripping, and Normalizing MRIs')
-        for pair in source_output_pairs:
-            if os.path.exists(pair.Output) and self.cfg.skip_existing:
-                self.logger.info(
-                    f'Skipping re-processing the existing file: {pair.Output}')
-                processed_pairs.append(pair)
-                continue
-            try:
-                if skull_stripping:
-                    center = Modality(
-                        modality_name='T1',
-                        input_path=pair.Source,
-                        normalized_bet_output_path=pair.Output,
-                        atlas_correction=True,
-                        normalizer=self._normalizer,
-                    )
-                else:
-                    center = Modality(
-                        modality_name='T1',
-                        input_path=pair.Source,
-                        normalized_skull_output_path=pair.Output,
-                        atlas_correction=True,
-                        normalizer=self._normalizer,
-                    )
-                # By default, registers the brains to SRI24 atlas
-                preprocessor = Preprocessor(
-                    center_modality=center,
-                    moving_modalities=[],
-                    registrator=self._registrator,
-                    brain_extractor=self._brain_extractor,
-                    use_gpu=self.cfg.use_gpu,
-                )
-                preprocessor.run(log_file=self.log_file)
-                processed_pairs.append(pair)
-                self.logger.info(f"Successfully processed '{pair.Source}'"
-                                 f" to '{pair.Output}'")
-            except Exception as e:
-                self.logger.error(f"Error processing '{pair.Source}': {e}")
-        self.logger.info(f'{len(processed_pairs)} MRIs have been'
-                         f' registered, skull-stripped, and normalized.')
+    def _process_image(self, pair: FilePair, process_func) -> FilePair:
+        if os.path.exists(pair.Output) and self.cfg.skip_existing:
+            self.logger.info(f'Skipped re-processing the'
+                             f' existing file: {pair.Output}')
+            return pair
+        try:
+            process_func(pair)
+            self.logger.info(f'Successfully processed'
+                             f" '{pair.Source}' to '{pair.Output}'")
+            return pair
+        except Exception as e:
+            self.logger.error(f"Error processing '{pair.Source}': {e}")
+            return None
 
+    def register_skullstrip_normalize_images(
+            self, source_output_pairs: List[FilePair]) -> List[FilePair]:
+        def process_func(pair):
+            center = Modality(
+                modality_name='T1',
+                input_path=pair.Source,
+                normalized_bet_output_path=pair.Output,
+                atlas_correction=True,
+                normalizer=self._normalizer,
+            )
+            preprocessor = Preprocessor(
+                center_modality=center,
+                moving_modalities=[],
+                registrator=self._registrator,
+                brain_extractor=self._brain_extractor,
+                use_gpu=self.cfg.use_gpu,
+            )
+            preprocessor.run(log_file=self.log_file)
+
+        self.logger.info('Registering, Skull-stripping,'
+                         ' and Normalizing brain volumes')
+        processed_pairs = [
+            self._process_image(pair, process_func)
+            for pair in source_output_pairs
+        ]
+        processed_pairs = [
+            pair for pair in processed_pairs if pair is not None
+        ]
+        self.logger.info(f'{len(processed_pairs)} volumes have been'
+                         f' registered, skull-stripped, and normalized.')
+        return processed_pairs
+
+    def register_normalize_images(
+            self, source_output_pairs: List[FilePair]) -> List[FilePair]:
+        def process_func(pair):
+            center = Modality(
+                modality_name='T1',
+                input_path=pair.Source,
+                normalized_skull_output_path=pair.Output,
+                atlas_correction=True,
+                normalizer=self._normalizer,
+            )
+            preprocessor = Preprocessor(
+                center_modality=center,
+                moving_modalities=[],
+                registrator=self._registrator,
+                brain_extractor=None,
+                use_gpu=self.cfg.use_gpu,
+            )
+            preprocessor.run(log_file=self.log_file)
+
+        self.logger.info('Registering, and Normalizing brain volumes')
+        processed_pairs = [
+            self._process_image(pair, process_func)
+            for pair in source_output_pairs
+        ]
+        processed_pairs = [
+            pair for pair in processed_pairs if pair is not None
+        ]
+        self.logger.info(f'{len(processed_pairs)} volumes have been'
+                         f' registered and normalized.')
+        return processed_pairs
+
+    def normalize_images(
+            self, source_output_pairs: List[FilePair]) -> List[FilePair]:
+        def process_func(pair):
+            image = sitk.ReadImage(pair.Source)
+            image = self._normalize_image(image)
+            sitk.WriteImage(image, pair.Output)
+
+        self.logger.info('Normalizing brain volumes')
+        processed_pairs = [
+            self._process_image(pair, process_func)
+            for pair in source_output_pairs
+        ]
+        processed_pairs = [
+            pair for pair in processed_pairs if pair is not None
+        ]
+        self.logger.info(f'{len(processed_pairs)} volumes have been'
+                         f' normalized.')
         return processed_pairs
 
 
@@ -161,6 +213,7 @@ class BaseDICOMPreProcessor(BasePreProcessor, ABC):
             # Load the DICOM series into a SimpleITK image
             image = reader.Execute()
 
+            # Apply windowing
             if apply_windowing:
                 # Read the first DICOM file to get the metadata
                 dicom_file = pydicom.dcmread(dicom_series[0])
@@ -173,6 +226,7 @@ class BaseDICOMPreProcessor(BasePreProcessor, ABC):
                     f'Applied windowing ({window_center}, {window_width})'
                     f" to series {series_id} in '{dicom_dir}'.")
 
+            # Normalize the image
             if normalize:
                 image = self._normalize_image(image)
                 self.logger.info(

@@ -37,10 +37,12 @@ class EPISURG_PreProcessor(BaseBrainPreProcessor):
     def run(self):
         self.logger.info('Start preprocessing EPISURG dataset')
         self.logger.info(self.cfg)
-        # 1. Find all files from 'preop' folders and sample randomly from them
-        sampled_files = self.find_and_sample_files(split='preop')
+        # 1. Find all files from 'postop' folders and sample randomly from them
+        #    (postop patients have a cavity in place of the epilepsy area)
+        sampled_files = self.find_and_sample_files(split='postop')
         # 2. Register to SRI24, skull-strip, and normalize all sampled images
-        processed_files = self.process_brain_images(sampled_files)
+        processed_files = self.register_skullstrip_normalize_images(
+            sampled_files)
         self.save_processed_files(processed_files)
         self.logger.info('EPISURG dataset preprocessing completed.')
         # Questions:

@@ -31,7 +31,8 @@ class IXI_PreProcessor(BaseBrainPreProcessor):
         # 1. Find all files and sample randomly from them
         sampled_files = self.find_and_sample_files()
         # 2. Register to SRI24, skull-strip, and normalize all sampled images
-        processed_files = self.process_brain_images(sampled_files)
+        processed_files = self.register_skullstrip_normalize_images(
+            sampled_files)
         self.save_processed_files(processed_files)
         self.logger.info('IXI dataset preprocessing completed.')
 
