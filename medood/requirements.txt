@@ -7,3 +7,4 @@ auxiliary
 SimpleITK
 pydicom
 pandas
+TorchIO

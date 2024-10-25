@@ -8,11 +8,10 @@ class PreProcessorConfig:
                                  type=str,
                                  required=True,
                                  help='Base directory of the dataset')
-        self.parser.add_argument(
-            '--output_dir',
-            type=str,
-            required=True,
-            help='Output directory for the processed data')
+        self.parser.add_argument('--output_dir',
+                                 type=str,
+                                 required=True,
+                                 help='Output directory of the processed data')
         self.parser.add_argument('--num_samples',
                                  type=int,
                                  default=None,

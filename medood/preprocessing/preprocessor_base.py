@@ -1,3 +1,4 @@
+import inspect
 import os
 import random
 from dataclasses import dataclass, fields
@@ -6,7 +7,7 @@ from datetime import datetime
 import logging
 
 from abc import ABC, abstractmethod
-from typing import List, Tuple
+from typing import List, Tuple, Callable
 
 import SimpleITK as sitk
 import numpy as np
@@ -25,6 +26,9 @@ from preprocessor_config import PreProcessorConfig, PreProcessorBrainConfig
 class FilePair:
     Source: str
     Output: str
+
+
+ProcessFunc = Callable[[FilePair], None]
 
 
 class BasePreProcessor(ABC):
@@ -80,7 +84,12 @@ class BasePreProcessor(ABC):
     def _normalize_image(self, image: sitk.Image) -> sitk.Image:
         image_array = sitk.GetArrayFromImage(image)
         normalized_array = self._normalizer.normalize(image_array)
-        return sitk.GetImageFromArray(normalized_array)
+        normalized_image = sitk.GetImageFromArray(normalized_array)
+        # Preserve the metadata (origin, spacing, direction)
+        normalized_image.SetOrigin(image.GetOrigin())
+        normalized_image.SetSpacing(image.GetSpacing())
+        normalized_image.SetDirection(image.GetDirection())
+        return normalized_image
 
     @abstractmethod
     def run(self):
@@ -92,8 +101,12 @@ class BaseBrainPreProcessor(BasePreProcessor, ABC):
         super().__init__(cfg)
         self._registrator = ANTsRegistrator()
         self._brain_extractor = HDBetExtractor()
+        self._atlas_image_path = os.path.join(
+            os.path.dirname(inspect.getfile(Preprocessor)),
+            'registration/atlas/t1_brats_space.nii')
 
-    def _process_image(self, pair: FilePair, process_func) -> FilePair:
+    def _process_image(self, pair: FilePair,
+                       process_func: ProcessFunc) -> FilePair:
         if os.path.exists(pair.Output) and self.cfg.skip_existing:
             self.logger.info(f'Skipped re-processing the'
                              f' existing file: {pair.Output}')
