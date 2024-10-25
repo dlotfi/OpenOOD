@@ -32,9 +32,11 @@ def motion_artifact(image: tio.Image) -> tio.Image:
 
 @sitk_to_torchio
 def ghost_artifact(image: tio.Image) -> tio.Image:
+    # Randomly select one or more axes
+    axes = random.sample([0, 1, 2], k=random.randint(1, 3))
     ghost_transform = tio.transforms.RandomGhosting(
         num_ghosts=(2, 5),  # Number of ghosted copies
-        axes=(0, 1, 2),  # Axes along which to apply the ghosting
+        axes=axes,  # Randomly selected axes
         intensity=(0.5, 1)  # Intensity range of the ghosting effect
     )
     return ghost_transform(image)
@@ -59,12 +61,9 @@ def spike_artifact(image: tio.Image) -> tio.Image:
 
 @sitk_to_torchio
 def gaussian_noise(image: tio.Image) -> tio.Image:
-    # Convert image to NumPy array
-    image_data = image.numpy()
-    # Normalize the image
-    image_data = (image_data - image_data.mean()) / image_data.std()
-    # Convert back to TorchIO image
-    image = tio.Image(tensor=image_data, affine=image.affine)
+    # Apply z-normalization
+    z_normalize = tio.transforms.ZNormalization()
+    image = z_normalize(image)
     # Add Gaussian noise
     noise_transform = tio.transforms.RandomNoise(
         mean=0,  # Mean of the Gaussian noise
@@ -75,13 +74,15 @@ def gaussian_noise(image: tio.Image) -> tio.Image:
 
 @sitk_to_torchio
 def downsampling(image: tio.Image) -> tio.Image:
-    # Define the downsampling factors for each axis
-    downsample_factors = (1, 1, 3)  # Example: downsample along the z-axis
+    # Define the downsampling factor for x and y axes
+    downsample_factor_xy = random.uniform(1, 3)
+    # Define the downsampling factor for z-axis
+    downsample_factor_z = random.uniform(1, 3)
     # Downsample the image
     downsampled_image = tio.transforms.Resample(
-        target=(image.spacing[0] * downsample_factors[0],
-                image.spacing[1] * downsample_factors[1],
-                image.spacing[2] * downsample_factors[2]))(image)
+        target=(image.spacing[0] * downsample_factor_xy,
+                image.spacing[1] * downsample_factor_xy,
+                image.spacing[2] * downsample_factor_z))(image)
     # Resample back to the original resolution
     resampled_image = tio.transforms.Resample(
         target=image.spacing)(downsampled_image)
@@ -90,12 +91,8 @@ def downsampling(image: tio.Image) -> tio.Image:
 
 @sitk_to_torchio
 def scaling_perturbation(image: tio.Image) -> tio.Image:
-    if random.random() < 0.5:
-        # Double the size
-        scales = (2, 2, 2)
-    else:
-        # Shrink by a factor of half
-        scales = (0.5, 0.5, 0.5)
+    # Double the size in half of the cases, otherwise shrink by half
+    scales = (2, 2, 2) if random.random() < 0.5 else (0.5, 0.5, 0.5)
     scaling_transform = tio.transforms.RandomAffine(
         scales=scales,
         degrees=0  # No rotation
@@ -114,27 +111,32 @@ def gamma_alteration(image: tio.Image) -> tio.Image:
 @sitk_to_torchio
 def truncation(image: tio.Image) -> tio.Image:
     # Get the original size of the image
-    original_size = np.array(image.shape)
+    original_shape = np.array(image.shape)
 
     # Randomly choose a direction (axis) to truncate
     axis = random.choice([0, 1, 2])
 
-    # Calculate the new size after truncation
-    new_size = original_size.copy()
-    new_size[axis] = new_size[axis] // 2
+    # Calculate the truncation size
+    truncation_shape = original_shape.copy()
+    truncation_shape[axis] = truncation_shape[axis] // 2
 
-    # Randomly choose the start index for truncation
-    start_index = random.randint(0, original_size[axis] - new_size[axis])
+    # Randomly choose to truncate from the start or end
+    start_index = 0 if random.choice(
+        [True, False]) else original_shape[axis] - truncation_shape[axis]
 
     # Create slices for truncation
     slices = [slice(None)] * 3
-    slices[axis] = slice(start_index, start_index + new_size[axis])
+    slices[axis] = slice(start_index, start_index + truncation_shape[axis])
 
-    # Apply truncation
-    truncated_image = image.data[slices]
+    # Create a copy of the image data
+    truncated_image_data = image.data.clone()
 
-    # Create a new TorchIO image with the truncated data
-    truncated_image = tio.Image(tensor=truncated_image, affine=image.affine)
+    # Fill the truncated area with zeros
+    truncated_image_data[slices] = 0
+
+    # Create a new TorchIO image with the modified data
+    truncated_image = tio.Image(tensor=truncated_image_data,
+                                affine=image.affine)
 
     return truncated_image
 
