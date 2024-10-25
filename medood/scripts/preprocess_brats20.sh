@@ -1,6 +1,6 @@
 #!/bin/bash
 
-python preprocessing/preprocess_brats20.py \
+python preprocess_brats20.py \
     --base_dir="$RAW_DATASETS_DIR/BraTS_2020/MICCAI_BraTS2020_TrainingData/" \
     --output_dir="$PROCESSED_DATASETS_DIR/brats20_t1/" \
     --output_dir_t1c="$PROCESSED_DATASETS_DIR/brats20_t1c/" \

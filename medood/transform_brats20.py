@@ -91,7 +91,7 @@ class BraTS20_Transformer(BaseBrainPreProcessor):
         # 1. Find all files in 'Test' split of the pre-processed BraTS2020
         #    and sample randomly from them
         sampled_files = self.find_and_sample_files()
-        # 2. Apply different transformation to all T1 sampled images
+        # 2. Apply various transformations to all T1 sampled images
         for name, transform in all_transformations.items():
             transform_sampled_files = [
                 FilePair(f.Source, f.Output.format(name.lower()))

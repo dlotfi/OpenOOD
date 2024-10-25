@@ -1,6 +1,6 @@
 #!/bin/bash
 
-python preprocessing/preprocess_lumbar.py \
+python preprocess_lumbar.py \
     --base_dir="$RAW_DATASETS_DIR/Lumbar_Spine_MRI/01_MRI_Data/" \
     --output_dir="$PROCESSED_DATASETS_DIR/lumbar_t1/" \
     --num_samples=250 \
