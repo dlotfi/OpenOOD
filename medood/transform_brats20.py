@@ -93,6 +93,8 @@ class BraTS20_Transformer(BaseBrainPreProcessor):
         sampled_files = self.find_and_sample_files()
         # 2. Apply various transformations to all T1 sampled images
         for name, transform in all_transformations.items():
+            os.makedirs(os.path.join(self.cfg.output_dir, name.lower()),
+                        exist_ok=True)
             transform_sampled_files = [
                 FilePair(f.Source, f.Output.format(name.lower()))
                 for f in sampled_files

@@ -6,3 +6,8 @@ python preprocess_atlas2.py \
     --num_samples=250 \
     --seed=328131023 \
     --use_gpu
+
+python generate_imglist.py \
+    --input_dir="$PROCESSED_DATASETS_DIR/atlas2_t1/" \
+    --base_dir="$PROCESSED_DATASETS_DIR" \
+    --output_dir="$IMGLIST_DIR"

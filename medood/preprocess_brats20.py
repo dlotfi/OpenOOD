@@ -10,14 +10,14 @@ from utils import stratified_split
 
 
 @dataclass
-class SplitFilePair(FilePair):
+class SplitLabeledFilePair(FilePair):
     Split: str
+    Label: str
 
 
 class BraTS20_PreProcessor(BaseBrainPreProcessor):
-
-    def find_and_sample_files(self) \
-            -> Tuple[List[SplitFilePair], List[FilePair], List[FilePair]]:
+    def find_and_sample_files(self) -> \
+            Tuple[List[SplitLabeledFilePair], List[FilePair], List[FilePair]]:
         csv_path = os.path.join(self.cfg.base_dir, 'name_mapping.csv')
         df = pd.read_csv(csv_path)
 
@@ -43,33 +43,45 @@ class BraTS20_PreProcessor(BaseBrainPreProcessor):
         for split, indices in split_indices.items():
             for idx in indices:
                 subject_number = subject_numbers[idx]
+                label = labels[idx]
+                # T1 source and output pair
                 input_path = os.path.join(
                     self.cfg.base_dir, f'BraTS20_Training_{subject_number}',
                     f'BraTS20_Training_{subject_number}_t1.nii.gz')
                 output_path = os.path.join(
                     self.cfg.output_dir, f'BraTS20_{subject_number}_T1.nii.gz')
                 t1_paired_files.append(
-                    SplitFilePair(input_path, output_path, split))
-                if split == 'TEST':
-                    t1c_output_path = os.path.join(
-                        self.cfg.output_dir_t1c,
-                        f'BraTS20_{subject_number}_T1C.nii.gz')
-                    t1c_paired_files.append(
-                        FilePair(input_path.replace('t1', 't1ce'),
-                                 t1c_output_path))
-                    t2f_output_path = os.path.join(
-                        self.cfg.output_dir_t2f,
-                        f'BraTS20_{subject_number}_T2F.nii.gz')
-                    t2f_paired_files.append(
-                        FilePair(input_path.replace('t1', 'flair'),
-                                 t2f_output_path))
+                    SplitLabeledFilePair(input_path, output_path, split,
+                                         label))
+                if split == 'TRAIN':
+                    continue
+                # T1C source and output pair
+                t1c_input_path = input_path.replace('t1', 't1ce')
+                t1c_output_path = os.path.join(
+                    self.cfg.output_dir_t1c,
+                    f'BraTS20_{subject_number}_T1C.nii.gz')
+                t1c_paired_files.append(
+                    SplitLabeledFilePair(t1c_input_path, t1c_output_path,
+                                         split, label))
+                # T2-FLAIR source and output pair
+                t2f_input_path = input_path.replace('t1', 'flair')
+                t2f_output_path = os.path.join(
+                    self.cfg.output_dir_t2f,
+                    f'BraTS20_{subject_number}_T2F.nii.gz')
+                t2f_paired_files.append(
+                    SplitLabeledFilePair(t2f_input_path, t2f_output_path,
+                                         split, label))
 
         self.logger.info(f'Sampled {len(t1_paired_files)} T1 files '
                          f'(TRAIN: {len(train_indices)}, '
                          f'VALIDATION: {len(val_indices)}, '
                          f'TEST: {len(test_indices)}).')
-        self.logger.info(f'Sampled {len(t1c_paired_files)} T1C files.')
-        self.logger.info(f'Sampled {len(t2f_paired_files)} T2-FLAIR files.')
+        self.logger.info(f'Sampled {len(t1c_paired_files)} T1C files.'
+                         f'(VALIDATION: {len(val_indices)}, '
+                         f'TEST: {len(test_indices)}).')
+        self.logger.info(f'Sampled {len(t2f_paired_files)} T2-FLAIR files.'
+                         f'(VALIDATION: {len(val_indices)}, '
+                         f'TEST: {len(test_indices)}).')
         return t1_paired_files, t1c_paired_files, t2f_paired_files
 
     def run(self):
@@ -82,11 +94,11 @@ class BraTS20_PreProcessor(BaseBrainPreProcessor):
         # 2. Normalize all T1 sampled images
         t1_processed_files = self.normalize_images(t1_sampled_files)
         self.save_processed_files(t1_processed_files)
-        # Normalize all T1C sampled images
+        #    Normalize all T1C (post contrast T1) sampled images
         t1c_processed_files = self.normalize_images(t1c_sampled_files)
         csv_path = os.path.join(self.cfg.output_dir_t1c, 'processed_files.csv')
         self.save_processed_files(t1c_processed_files, csv_path)
-        # Normalize all T2-FLAIR sampled images
+        #    Normalize all T2-FLAIR sampled images
         t2f_processed_files = self.normalize_images(t2f_sampled_files)
         csv_path = os.path.join(self.cfg.output_dir_t2f, 'processed_files.csv')
         self.save_processed_files(t2f_processed_files, csv_path)

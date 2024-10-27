@@ -5,3 +5,8 @@ python preprocess_lumbar.py \
     --output_dir="$PROCESSED_DATASETS_DIR/lumbar_t1/" \
     --num_samples=250 \
     --seed=328131023
+
+python generate_imglist.py \
+    --input_dir="$PROCESSED_DATASETS_DIR/lumbar_t1/" \
+    --base_dir="$PROCESSED_DATASETS_DIR" \
+    --output_dir="$IMGLIST_DIR"

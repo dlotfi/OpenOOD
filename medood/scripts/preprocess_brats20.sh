@@ -5,5 +5,23 @@ python preprocess_brats20.py \
     --output_dir="$PROCESSED_DATASETS_DIR/brats20_t1/" \
     --output_dir_t1c="$PROCESSED_DATASETS_DIR/brats20_t1c/" \
     --output_dir_t2f="$PROCESSED_DATASETS_DIR/brats20_t2f/" \
-    --split_num_samples 276 18 75 \
+    --split_num_samples 276 20 73 \
     --seed=328131023
+
+python generate_imglist.py \
+    --input_dir="$PROCESSED_DATASETS_DIR/brats20_t1/" \
+    --base_dir="$PROCESSED_DATASETS_DIR" \
+    --output_dir="$IMGLIST_DIR" \
+    --labels LGG HGG
+
+python generate_imglist.py \
+    --input_dir="$PROCESSED_DATASETS_DIR/brats20_t1c/" \
+    --base_dir="$PROCESSED_DATASETS_DIR" \
+    --output_dir="$IMGLIST_DIR" \
+    --labels LGG HGG
+
+python generate_imglist.py \
+    --input_dir="$PROCESSED_DATASETS_DIR/brats20_t2f/" \
+    --base_dir="$PROCESSED_DATASETS_DIR" \
+    --output_dir="$IMGLIST_DIR" \
+    --labels LGG HGG
