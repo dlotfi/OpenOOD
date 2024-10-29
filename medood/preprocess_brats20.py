@@ -95,10 +95,12 @@ class BraTS20_PreProcessor(BaseBrainPreProcessor):
         t1_processed_files = self.normalize_images(t1_sampled_files)
         self.save_processed_files(t1_processed_files)
         #    Normalize all T1C (post contrast T1) sampled images
+        os.makedirs(cfg.output_dir_t1c, exist_ok=True)
         t1c_processed_files = self.normalize_images(t1c_sampled_files)
         csv_path = os.path.join(self.cfg.output_dir_t1c, 'processed_files.csv')
         self.save_processed_files(t1c_processed_files, csv_path)
         #    Normalize all T2-FLAIR sampled images
+        os.makedirs(cfg.output_dir_t2f, exist_ok=True)
         t2f_processed_files = self.normalize_images(t2f_sampled_files)
         csv_path = os.path.join(self.cfg.output_dir_t2f, 'processed_files.csv')
         self.save_processed_files(t2f_processed_files, csv_path)

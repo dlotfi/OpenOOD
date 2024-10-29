@@ -12,6 +12,8 @@ def find_csv_files(directory):
 
 
 def generate_imglist(input_csv_paths, base_dir, output_dir, labels):
+    os.makedirs(output_dir, exist_ok=True)
+
     for input_csv_path in input_csv_paths:
         # Read the CSV file
         df = pd.read_csv(input_csv_path)
@@ -35,8 +37,6 @@ def generate_imglist(input_csv_paths, base_dir, output_dir, labels):
 
         # Group by 'Split' and write to respective text files
         for split, group in df.groupby('Split'):
-            print(f"Generating image list '{split}_{imglist_name}.txt'"
-                  f' (#items={len(group)}) ...')
             split_file_path = os.path.join(output_dir,
                                            f'{split}_{imglist_name}.txt')
             with open(split_file_path, 'w') as f:
@@ -44,6 +44,8 @@ def generate_imglist(input_csv_paths, base_dir, output_dir, labels):
                     relative_output = os.path.relpath(row['Output'], base_dir)
                     label = label_map[row.get('Label', None)]
                     f.write(f'{relative_output} {label}\n')
+            print(f"Image list '{split}_{imglist_name}.txt'"
+                  f' (#items={len(group)}) was generated successfully.')
 
 
 if __name__ == '__main__':

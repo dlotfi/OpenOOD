@@ -1,10 +1,11 @@
 torch==2.4.1
 torchvision==0.19.1
-brainles-preprocessing
+brainles-preprocessing>=0.1.5
 brainles_preprocessing[ants]
 brainles_preprocessing[ereg]
-auxiliary
-SimpleITK
-pydicom
-pandas
-TorchIO
+auxiliary>=0.0.42
+SimpleITK>=2.4.0
+pydicom>=3.0.1
+pandas>=2.2.3
+TorchIO>=0.20.1
+natsort>=8.4.0

@@ -1,3 +1,4 @@
+import json
 import os
 from typing import List
 
@@ -10,10 +11,23 @@ from utils import random_sample
 from transformations import (motion_artifact, ghost_artifact, bias_artifact,
                              spike_artifact, gaussian_noise, downsampling,
                              scaling_perturbation, gamma_alteration,
-                             truncation, erroneous_registration, TransformFunc)
+                             truncation, erroneous_registration)
 
 
 class BraTS20_Transformer(BaseBrainPreProcessor):
+    _all_transformations = {
+        'Motion': motion_artifact,
+        'Ghost': ghost_artifact,
+        'Bias': bias_artifact,
+        'Spike': spike_artifact,
+        'Gaussian': gaussian_noise,
+        'Downsampling': downsampling,
+        'Scaling': scaling_perturbation,
+        'Gamma': gamma_alteration,
+        'Truncation': truncation,
+        'Registration': erroneous_registration
+    }
+
     def transform_images(self, source_output_pairs: List[FilePair],
                          transform_name: str,
                          transform_func: ProcessFunc) -> List[FilePair]:
@@ -35,7 +49,7 @@ class BraTS20_Transformer(BaseBrainPreProcessor):
         csv_path = os.path.join(self.cfg.base_dir, 'processed_files.csv')
         df = pd.read_csv(csv_path)
 
-        df_filtered = df[df[['Split']] == 'TEST']
+        df_filtered = df[df['Split'] == 'TEST']
 
         candidate_files = []
         for _, row in df_filtered.iterrows():
@@ -54,54 +68,53 @@ class BraTS20_Transformer(BaseBrainPreProcessor):
 
         return sampled_files
 
-    def _wrap_transform(self, transform: TransformFunc) -> ProcessFunc:
-        def wrapped_transform(pair: FilePair) -> None:
-            image = sitk.ReadImage(pair.Source)
-            image = transform(image)
+    def _get_transform_func(self, transform_name: str,
+                            debug_dir: str) -> ProcessFunc:
+        transform_func = self._all_transformations[transform_name]
+
+        def wrapped_erroneous_registration(pair: FilePair) -> None:
+            erroneous_registration(pair.Source, pair.Output,
+                                   self._atlas_image_path, debug_dir)
+            image = sitk.ReadImage(pair.Output)
             image = self._normalize_image(image)
             sitk.WriteImage(image, pair.Output)
 
+        def wrapped_transform(pair: FilePair) -> None:
+            image = sitk.ReadImage(pair.Source)
+            image, transform_details = transform_func(image)
+            if debug_dir and transform_details:
+                transform_details_path = os.path.join(
+                    debug_dir,
+                    os.path.basename(pair.Output).replace('.nii.gz', '.json'))
+                with open(transform_details_path, 'w') as f:
+                    json.dump(transform_details, f, indent=4)
+            image = self._normalize_image(image)
+            sitk.WriteImage(image, pair.Output)
+
+        if transform_name == 'Registration':
+            return wrapped_erroneous_registration
         return wrapped_transform
 
-    def _erroneous_registration(self, pair: FilePair) -> None:
-        transforms_debug_dir = os.path.join(self.cfg.output_dir,
-                                            'registration/transforms')
-        erroneous_registration(pair.Source, pair.Output,
-                               self._atlas_image_path, transforms_debug_dir)
-        image = sitk.ReadImage(pair.Output)
-        image = self._normalize_image(image)
-        sitk.WriteImage(image, pair.Output)
-
     def run(self):
-        all_transformations = {
-            'Motion': self._wrap_transform(motion_artifact),
-            'Ghost': self._wrap_transform(ghost_artifact),
-            'Bias': self._wrap_transform(bias_artifact),
-            'Spike': self._wrap_transform(spike_artifact),
-            'Gaussian': self._wrap_transform(gaussian_noise),
-            'Downsampling': self._wrap_transform(downsampling),
-            'Scaling': self._wrap_transform(scaling_perturbation),
-            'Gamma': self._wrap_transform(gamma_alteration),
-            'Truncation': self._wrap_transform(truncation),
-            'Registration': self._erroneous_registration
-        }
-
         self.logger.info('Start synthesizing transformed BraTS2020 dataset')
         self.logger.info(self.cfg)
         # 1. Find all files in 'Test' split of the pre-processed BraTS2020
         #    and sample randomly from them
         sampled_files = self.find_and_sample_files()
         # 2. Apply various transformations to all T1 sampled images
-        for name, transform in all_transformations.items():
-            os.makedirs(os.path.join(self.cfg.output_dir, name.lower()),
-                        exist_ok=True)
+        for name in self._all_transformations.keys():
+            output_dir = os.path.join(self.cfg.output_dir, name.lower())
+            debug_dir = os.path.join(output_dir, 'transforms')
+            os.makedirs(debug_dir, exist_ok=True)
             transform_sampled_files = [
                 FilePair(f.Source, f.Output.format(name.lower()))
                 for f in sampled_files
             ]
+            transform_func = self._get_transform_func(name, debug_dir)
             processed_files = self.transform_images(transform_sampled_files,
-                                                    name, transform)
-            self.save_processed_files(processed_files)
+                                                    name, transform_func)
+            csv_path = os.path.join(output_dir, 'processed_files.csv')
+            self.save_processed_files(processed_files, csv_path)
         self.logger.info('BraTS20 dataset preprocessing completed.')
 
 

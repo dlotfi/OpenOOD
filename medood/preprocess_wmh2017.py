@@ -43,8 +43,9 @@ class WMH2017_PreProcessor(BaseBrainPreProcessor):
     def run(self):
         self.logger.info('Start preprocessing WMH2017 dataset')
         self.logger.info(self.cfg)
-        # 1. Find all files in 'Train' split and sample randomly from them
-        sampled_files = self.find_and_sample_files(split='Train')
+        # 1. Find all files in  both 'Train' and 'Test' splits
+        #    and sample randomly from them
+        sampled_files = self.find_and_sample_files()
         # 2. Register to SRI24, skull-strip, and normalize all sampled images
         processed_files = self.register_skullstrip_normalize_images(
             sampled_files)

@@ -4,6 +4,8 @@ from dataclasses import dataclass
 from re import Pattern, Match
 from typing import Union, List, TypeVar, Tuple
 
+from natsort import natsorted
+
 T = TypeVar('T')
 
 
@@ -15,7 +17,8 @@ class FileMatch:
 
 def find_all_files(base_dir: str,
                    patterns: Union[Pattern, List[Pattern]],
-                   find_directories: bool = False) -> List[FileMatch]:
+                   find_directories: bool = False,
+                   sort: bool = True) -> List[FileMatch]:
     matching_files = []
     patterns = patterns if isinstance(patterns, list) else [patterns]
     if find_directories:
@@ -32,6 +35,9 @@ def find_all_files(base_dir: str,
                     match = pattern.search(file_path)
                     if match:
                         matching_files.append(FileMatch(file_path, match))
+    if sort:
+        # Sort the matching files by file path using natural sorting
+        matching_files = natsorted(matching_files, key=lambda x: x.FilePath)
     return matching_files
 
 
@@ -59,8 +65,8 @@ def stratified_split(
     # Calculate the number of samples for each class in each split
     class_split_counts = {label: [0, 0, 0] for label in unique_classes}
     for label, count in class_counts.items():
-        train_count = int(count * split_sample_sizes[0] / total_samples)
-        val_count = int(count * split_sample_sizes[1] / total_samples)
+        train_count = round(count * split_sample_sizes[0] / total_samples)
+        val_count = round(count * split_sample_sizes[1] / total_samples)
         test_count = count - train_count - val_count
         class_split_counts[label] = [train_count, val_count, test_count]
 

@@ -13,6 +13,7 @@ import SimpleITK as sitk
 import numpy as np
 import pandas as pd
 import pydicom
+import torch
 from auxiliary.normalization.percentile_normalizer import PercentileNormalizer
 from brainles_preprocessing.brain_extraction import HDBetExtractor
 from brainles_preprocessing.modality import Modality
@@ -45,6 +46,7 @@ class BasePreProcessor(ABC):
         if cfg.seed is not None:
             random.seed(cfg.seed)
             np.random.seed(cfg.seed)
+            torch.manual_seed(cfg.seed)
 
     def _setup_logger(self, level=logging.DEBUG):
         preprocessor_name = self.__class__.__name__

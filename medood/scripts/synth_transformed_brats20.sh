@@ -1,9 +1,12 @@
 #!/bin/bash
 
+source ./scripts/common_env.sh
+
 python transform_brats20.py \
     --base_dir="$PROCESSED_DATASETS_DIR/brats20_t1/" \
     --output_dir="$PROCESSED_DATASETS_DIR/brats20_t1_transformed/" \
-    --seed=328131023
+    --seed=$SEED \
+    --skip_existing
 
 python generate_imglist.py \
     --input_dir="$PROCESSED_DATASETS_DIR/brats20_t1_transformed" \
