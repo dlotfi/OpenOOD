@@ -7,7 +7,7 @@ from datetime import datetime
 import logging
 
 from abc import ABC, abstractmethod
-from typing import List, Tuple, Callable
+from typing import List, Tuple, Callable, TypeVar, Union
 
 import SimpleITK as sitk
 import numpy as np
@@ -29,7 +29,19 @@ class FilePair:
     Output: str
 
 
+@dataclass
+class TempFilePair(FilePair):
+    OriginalSource: str
+
+
+@dataclass
+class Window:
+    Center: float
+    Width: float
+
+
 ProcessFunc = Callable[[FilePair], None]
+T_FilePair = TypeVar('T_FilePair', bound=FilePair)
 
 
 class BasePreProcessor(ABC):
@@ -107,8 +119,8 @@ class BaseBrainPreProcessor(BasePreProcessor, ABC):
             os.path.dirname(inspect.getfile(Preprocessor)),
             'registration/atlas/t1_brats_space.nii')
 
-    def _process_image(self, pair: FilePair,
-                       process_func: ProcessFunc) -> FilePair:
+    def _process_image(self, pair: T_FilePair,
+                       process_func: ProcessFunc) -> T_FilePair:
         if os.path.exists(pair.Output) and self.cfg.skip_existing:
             self.logger.info(f'Skipped re-processing the'
                              f' existing file: {pair.Output}')
@@ -123,7 +135,7 @@ class BaseBrainPreProcessor(BasePreProcessor, ABC):
             return None
 
     def register_skullstrip_normalize_images(
-            self, source_output_pairs: List[FilePair]) -> List[FilePair]:
+            self, source_output_pairs: List[T_FilePair]) -> List[T_FilePair]:
         def process_func(pair):
             center = Modality(
                 modality_name='T1',
@@ -155,7 +167,7 @@ class BaseBrainPreProcessor(BasePreProcessor, ABC):
         return processed_pairs
 
     def register_normalize_images(
-            self, source_output_pairs: List[FilePair]) -> List[FilePair]:
+            self, source_output_pairs: List[T_FilePair]) -> List[T_FilePair]:
         def process_func(pair):
             center = Modality(
                 modality_name='T1',
@@ -186,7 +198,7 @@ class BaseBrainPreProcessor(BasePreProcessor, ABC):
         return processed_pairs
 
     def normalize_images(
-            self, source_output_pairs: List[FilePair]) -> List[FilePair]:
+            self, source_output_pairs: List[T_FilePair]) -> List[T_FilePair]:
         def process_func(pair):
             image = sitk.ReadImage(pair.Source)
             image = self._normalize_image(image)
@@ -206,8 +218,10 @@ class BaseBrainPreProcessor(BasePreProcessor, ABC):
 
 
 class BaseDICOMPreProcessor(BasePreProcessor, ABC):
-    def _dicom_to_nifti(self, dicom_dir: str, output_nifti: str,
-                        apply_windowing: bool, normalize: bool) -> List[str]:
+    def _dicom_to_nifti(self,
+                        dicom_dir: str,
+                        output_nifti: str,
+                        apply_window: Union[str, Window] = None) -> List[str]:
         # Read the DICOM series
         reader = sitk.ImageSeriesReader()
         series_ids = reader.GetGDCMSeriesIDs(dicom_dir)
@@ -229,23 +243,22 @@ class BaseDICOMPreProcessor(BasePreProcessor, ABC):
             image = reader.Execute()
 
             # Apply windowing
-            if apply_windowing:
-                # Read the first DICOM file to get the metadata
-                dicom_file = pydicom.dcmread(dicom_series[0])
-                window_center = float(dicom_file.WindowCenter)
-                window_width = float(dicom_file.WindowWidth)
+            if apply_window is not None:
+                if apply_window == 'auto':
+                    # Read the first DICOM file to get the metadata
+                    dicom_file = pydicom.dcmread(dicom_series[0])
+                    window_center = float(dicom_file.WindowCenter)
+                    window_width = float(dicom_file.WindowWidth)
+                else:
+                    window_center = apply_window.Center
+                    window_width = apply_window.Width
+
                 image = sitk.IntensityWindowing(
                     image, window_center - window_width / 2,
                     window_center + window_width / 2)
                 self.logger.info(
-                    f'Applied windowing ({window_center}, {window_width})'
+                    f'Applied window ({window_center}, {window_width})'
                     f" to series {series_id} in '{dicom_dir}'.")
-
-            # Normalize the image
-            if normalize:
-                image = self._normalize_image(image)
-                self.logger.info(
-                    f"Normalized series {series_id} in '{dicom_dir}'.")
 
             # Create a NIfTI file name based on the series ID
             if len(series_ids) > 1:
@@ -263,14 +276,13 @@ class BaseDICOMPreProcessor(BasePreProcessor, ABC):
     def convert_dicom_series_to_nifti(
             self,
             source_dicom_output_nifti_pairs: List[FilePair],
-            apply_windowing: bool = False,
-            normalize: bool = False) -> List[FilePair]:
+            apply_window: Union[str, Window] = None) -> List[FilePair]:
         self.logger.info('Converting DICOM series to NIfTI')
         processed_pairs = []
         for pair in source_dicom_output_nifti_pairs:
             try:
                 output_nifti_files = self._dicom_to_nifti(
-                    pair.Source, pair.Output, apply_windowing, normalize)
+                    pair.Source, pair.Output, apply_window)
                 for nifti_file in output_nifti_files:
                     processed_pairs.append(FilePair(pair.Source, nifti_file))
             except Exception as e:
@@ -283,7 +295,8 @@ class BaseDICOMPreProcessor(BasePreProcessor, ABC):
 
 class BaseNonBrainPreProcessor(BasePreProcessor, ABC):
     def _resample_and_crop(self, input_path: str, output_path: str,
-                           target_size: Tuple, target_spacing: Tuple) -> None:
+                           target_size: Tuple, target_spacing: Tuple,
+                           pad_if_required: bool, normalize: bool) -> None:
         # Read the input image
         image = sitk.ReadImage(input_path)
 
@@ -302,37 +315,73 @@ class BaseNonBrainPreProcessor(BasePreProcessor, ABC):
         resample.SetInterpolator(sitk.sitkLinear)
         resampled_image = resample.Execute(image)
 
+        padded = False
+        if pad_if_required:
+            # Apply padding if the new_size is smaller than target_size
+            padding_lower = [
+                max(0, (tsz - nsz) // 2)
+                for tsz, nsz in zip(target_size, new_size)
+            ]
+            padding_upper = [
+                max(0, tsz - nsz - pl)
+                for tsz, nsz, pl in zip(target_size, new_size, padding_lower)
+            ]
+            if any(padding_lower) or any(padding_upper):
+                resampled_image = sitk.ConstantPad(resampled_image,
+                                                   padding_lower,
+                                                   padding_upper, 0)
+                padded = True
+
         # Center crop the image to the target size
         resampled_size = resampled_image.GetSize()
-        crop_start = [(rsz - tsz) // 2
-                      for rsz, tsz in zip(resampled_size, target_size)]
-        crop_end = [start + tsz for start, tsz in zip(crop_start, target_size)]
+        crop_start = [
+            max(0, (rsz - tsz) // 2)
+            for rsz, tsz in zip(resampled_size, target_size)
+        ]
+        crop_end = [
+            min(start + tsz, rsz)
+            for start, tsz, rsz in zip(crop_start, target_size, resampled_size)
+        ]
         cropped_image = resampled_image[crop_start[0]:crop_end[0],
                                         crop_start[1]:crop_end[1],
                                         crop_start[2]:crop_end[2]]
 
+        # Normalize the image
+        if normalize:
+            cropped_image = self._normalize_image(cropped_image)
+
         # Write the output image
         sitk.WriteImage(cropped_image, output_path)
-        self.logger.info(f"'{input_path}' resampled and center cropped"
-                         f" successfully to '{output_path}'")
+        processing_message = \
+            f"'{input_path}' has been resampled" + \
+            (', padded' if padded else '') + \
+            (' and center cropped' if not normalize else
+             ', center cropped, and normalized') + \
+            f" successfully to '{output_path}':" + \
+            f' Original-Size={tuple(original_size)},' + \
+            f' Original-Spacing={tuple(original_spacing)},' + \
+            f' Resampled-Size={tuple(new_size)}'
+        self.logger.info(processing_message)
 
-    def resample_and_center_crop_files(
-        self,
-        files: List[str],
-        target_size: Tuple = (240, 240, 155),
-        target_spacing: Tuple = (1.0, 1.0, 1.0)
-    ) -> List[str]:
+    def resample_and_center_crop_images(
+            self,
+            pairs: List[T_FilePair],
+            target_size: Tuple = (240, 240, 155),
+            target_spacing: Tuple = (1.0, 1.0, 1.0),
+            pad_if_required: bool = True,
+            normalize: bool = False) -> List[T_FilePair]:
         self.logger.info(f'Resampling files to {target_spacing}'
                          f' and center cropping to {target_size}')
         resampled_cropped_files = []
-        for file_path in files:
+        for pair in pairs:
             try:
-                self._resample_and_crop(file_path, file_path, target_size,
-                                        target_spacing)
-                resampled_cropped_files.append(file_path)
+                self._resample_and_crop(pair.Source, pair.Output, target_size,
+                                        target_spacing, pad_if_required,
+                                        normalize)
+                resampled_cropped_files.append(pair)
             except Exception as e:
                 self.logger.error(
-                    f"Error resampling and center cropping '{file_path}': {e}")
+                    f"Error resampling and cropping '{pair.Source}': {e}")
         self.logger.info(f'{len(resampled_cropped_files)} files have been'
                          f' resampled and center cropped.')
         return resampled_cropped_files

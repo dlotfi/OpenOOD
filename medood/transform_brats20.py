@@ -5,7 +5,8 @@ from typing import List
 import pandas as pd
 import SimpleITK as sitk
 
-from preprocessor_base import BaseBrainPreProcessor, FilePair, ProcessFunc
+from preprocessor_base import (BaseBrainPreProcessor, FilePair, ProcessFunc,
+                               T_FilePair)
 from preprocessor_config import PreProcessorBrainConfig
 from utils import random_sample
 from transformations import (motion_artifact, ghost_artifact, bias_artifact,
@@ -28,9 +29,9 @@ class BraTS20_Transformer(BaseBrainPreProcessor):
         'Registration': erroneous_registration
     }
 
-    def transform_images(self, source_output_pairs: List[FilePair],
+    def transform_images(self, source_output_pairs: List[T_FilePair],
                          transform_name: str,
-                         transform_func: ProcessFunc) -> List[FilePair]:
+                         transform_func: ProcessFunc) -> List[T_FilePair]:
 
         self.logger.info(f"Applying '{transform_name}' transform"
                          f' to brain volumes')

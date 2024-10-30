@@ -1,17 +1,11 @@
 import os
 import re
-from dataclasses import dataclass
+
 from typing import List
-
 from preprocessor_base import (BaseDICOMPreProcessor, BaseNonBrainPreProcessor,
-                               FilePair)
+                               FilePair, TempFilePair)
 from preprocessor_config import PreProcessorConfig
-from utils import find_all_files, random_sample
-
-
-@dataclass
-class ResampledFilePair(FilePair):
-    Resampled: bool
+from utils import find_all_files, random_sample, insert_subdir, remove_subdir
 
 
 class LUMBAR_PreProcessor(BaseDICOMPreProcessor, BaseNonBrainPreProcessor):
@@ -40,19 +34,27 @@ class LUMBAR_PreProcessor(BaseDICOMPreProcessor, BaseNonBrainPreProcessor):
     def run(self):
         self.logger.info('Start preprocessing LUMBAR dataset')
         self.logger.info(self.cfg)
+        subdir = 'raw_nifti'
         # 1. Find all DICOM series and sample randomly from them
         sampled_dicom_series = self.find_and_sample_dicom_series()
         # 2. Convert all sampled series to NIfTI while normalizing them
-        processed_files = self.convert_dicom_series_to_nifti(
-            sampled_dicom_series, normalize=True)
-        # 3. Resample all volumes to 1mm isotropic and center crop
-        resampled_files = self.resample_and_center_crop_files(
-            [f.Output for f in processed_files])
-        processed_files = [
-            ResampledFilePair(f.Source, f.Output, f.Output in resampled_files)
-            for f in processed_files
+        os.makedirs(os.path.join(self.cfg.output_dir, subdir), exist_ok=True)
+        sampled_dicom_series = [
+            FilePair(f.Source, insert_subdir(f.Output, subdir))
+            for f in sampled_dicom_series
         ]
-        self.save_processed_files(processed_files)
+        converted_files = self.convert_dicom_series_to_nifti(
+            sampled_dicom_series)
+        # 3. Resample all volumes to 1mm isotropic and center crop
+        files_to_be_processed = [
+            TempFilePair(Source=f.Output,
+                         Output=remove_subdir(f.Output, subdir),
+                         OriginalSource=f.Source) for f in converted_files
+        ]
+        processed_files = self.resample_and_center_crop_images(
+            files_to_be_processed, normalize=True)
+        self.save_processed_files(
+            [FilePair(f.OriginalSource, f.Output) for f in processed_files])
         self.logger.info('LUMBAR dataset preprocessing completed.')
         # Questions:
         # *  Which folder: 'T1_TSE_TRA_000*'?

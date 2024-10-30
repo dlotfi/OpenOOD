@@ -17,7 +17,9 @@ class SplitLabeledFilePair(FilePair):
 
 class BraTS20_PreProcessor(BaseBrainPreProcessor):
     def find_and_sample_files(self) -> \
-            Tuple[List[SplitLabeledFilePair], List[FilePair], List[FilePair]]:
+            Tuple[List[SplitLabeledFilePair],
+                  List[SplitLabeledFilePair],
+                  List[SplitLabeledFilePair]]:
         csv_path = os.path.join(self.cfg.base_dir, 'name_mapping.csv')
         df = pd.read_csv(csv_path)
 

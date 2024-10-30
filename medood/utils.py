@@ -85,3 +85,17 @@ def stratified_split(
         test_indices.extend(sorted(indices[train_count + val_count:]))
 
     return train_indices, val_indices, test_indices
+
+
+def insert_subdir(path: str, subdir: str) -> str:
+    dir_name, file_name = os.path.split(path)
+    new_path = os.path.join(dir_name, subdir, file_name)
+    return new_path
+
+
+def remove_subdir(path: str, subdir: str) -> str:
+    parts = path.split(os.sep)
+    if subdir in parts:
+        parts.remove(subdir)
+    new_path = os.sep.join(parts)
+    return new_path
