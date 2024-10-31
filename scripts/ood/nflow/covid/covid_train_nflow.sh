@@ -1,5 +1,5 @@
 #!/bin/bash
-# sh scripts/osr/nflow/covid_train_nflow.sh
+# sh scripts/ood/nflow/covid/covid_train_nflow.sh
 
 SEED=0
 export CUBLAS_WORKSPACE_CONFIG=:4096:8

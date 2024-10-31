@@ -1,5 +1,5 @@
 #!/bin/bash
-# sh scripts/osr/nflow/organamnist_224_agg_visualize.sh
+# sh scripts/ood/nflow/organamnist_224/organamnist_224_agg_visualize.sh
 
 SEED=0
 

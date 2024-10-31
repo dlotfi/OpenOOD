@@ -1,5 +1,5 @@
 #!/bin/bash
-# sh scripts/osr/nflow/organamnist_plus_224_test_ood_nflow.sh
+# sh scripts/ood/nflow/organamnist_plus_224/organamnist_plus_224_test_ood_nflow.sh
 
 SEED=0
 python main.py \

@@ -1,5 +1,5 @@
 #!/bin/bash
-# sh scripts/osr/nflow/covid_test_fsood_nflow.sh
+# sh scripts/ood/nflow/covid/covid_test_fsood_nflow.sh
 
 SEED=0
 python main.py \

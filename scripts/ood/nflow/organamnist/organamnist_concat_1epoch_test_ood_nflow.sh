@@ -1,5 +1,5 @@
 #!/bin/bash
-# sh scripts/osr/nflow/organamnist_concat_1epoch_test_ood_nflow.sh
+# sh scripts/ood/nflow/organamnist/organamnist_concat_1epoch_test_ood_nflow.sh
 
 SEED=0
 python main.py \

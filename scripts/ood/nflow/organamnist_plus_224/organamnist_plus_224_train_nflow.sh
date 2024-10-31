@@ -1,5 +1,5 @@
 #!/bin/bash
-# sh scripts/osr/nflow/organamnist_plus_224_train_nflow.sh
+# sh scripts/ood/nflow/organamnist_plus_224/organamnist_plus_224_train_nflow.sh
 
 SEED=0
 export CUBLAS_WORKSPACE_CONFIG=:4096:8

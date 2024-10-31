@@ -1,5 +1,5 @@
 #!/bin/bash
-# sh scripts/osr/nflow/cifar10_visualize.sh
+# sh scripts/ood/nflow/cifar10/cifar10_visualize.sh
 
 SEED=0
 
