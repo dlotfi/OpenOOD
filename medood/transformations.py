@@ -176,16 +176,16 @@ def truncation(subject: tio.Subject) -> Tuple[tio.Image, dict]:
 def erroneous_registration(source_path: str,
                            output_path: str,
                            atlas_image_path: str,
-                           transform_debug_dir: str = None) -> None:
+                           transform_debug_dir: str = None,
+                           random_seed: int = None) -> None:
     fixed_image = ants.image_read(atlas_image_path)
     moving_image = ants.image_read(source_path)
 
     # Perform initial registration
-    registration_result = ants.registration(
-        fixed=fixed_image,
-        moving=moving_image,
-        type_of_transform='Rigid',
-    )
+    registration_result = ants.registration(fixed=fixed_image,
+                                            moving=moving_image,
+                                            type_of_transform='Rigid',
+                                            random_seed=random_seed)
 
     # Extract the affine registration matrix
     registration_transform = ants.read_transform(

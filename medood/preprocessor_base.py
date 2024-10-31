@@ -113,7 +113,10 @@ class BasePreProcessor(ABC):
 class BaseBrainPreProcessor(BasePreProcessor, ABC):
     def __init__(self, cfg: PreProcessorBrainConfig):
         super().__init__(cfg)
-        self._registrator = ANTsRegistrator()
+        self._registrator = ANTsRegistrator(registration_params={
+            'type_of_transform': 'Rigid',
+            'random_seed': self.cfg.seed
+        })
         self._brain_extractor = HDBetExtractor()
         self._atlas_image_path = os.path.join(
             os.path.dirname(inspect.getfile(Preprocessor)),

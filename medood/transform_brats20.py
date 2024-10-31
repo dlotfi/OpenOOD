@@ -75,7 +75,8 @@ class BraTS20_Transformer(BaseBrainPreProcessor):
 
         def wrapped_erroneous_registration(pair: FilePair) -> None:
             erroneous_registration(pair.Source, pair.Output,
-                                   self._atlas_image_path, debug_dir)
+                                   self._atlas_image_path, debug_dir,
+                                   self.cfg.seed)
             image = sitk.ReadImage(pair.Output)
             image = self._normalize_image(image)
             sitk.WriteImage(image, pair.Output)
