@@ -49,21 +49,27 @@ class CQ500_PreProcessor(BaseDICOMPreProcessor, BaseBrainPreProcessor):
                     if f.lower().endswith('.dcm')
                 ]
 
-                # Ignore series with less than 200 slices, since they
-                # likely contain the brain partially
-                if len(dicom_files) < 200:
+                # Exclude series with fewer than 200 slices, as they likely
+                # contain only a partial view of the brain, or with more than
+                # 400 slices, as they likely include other body parts.
+                if len(dicom_files) < 200 or len(dicom_files) > 400:
                     continue
 
-                # Filter series based on slice thickness and series name. Some
-                # series having 'BODY' in their FilterType are not brain scans.
+                # Filter series based on slice thickness and ensure that the
+                # series name indicates it is pre-contrast. Exclude any series
+                # with 'BODY' in their FilterType, as they are most likely not
+                # brain scans. Additionally, consider only series labeled as
+                # 'PRIMARY'.
                 ds = pydicom.dcmread(dicom_files[0])
                 if float(ds.SliceThickness) <= 0.625 and \
                    'BODY' not in ds.FilterType and \
+                   'PRIMARY' in ds.ImageType and \
                    pre_contrast_pattern.search(series_name):
                     found_series.append((root, len(dicom_files)))
 
             if found_series:
-                # find the series with the most number of slices
+                # find the series with the most number of slices and
+                # the shortest series name
                 found_series = sorted(found_series,
                                       key=lambda x: (-x[1], len(x[0])))
                 best_series_path = found_series[0][0]
@@ -71,7 +77,7 @@ class CQ500_PreProcessor(BaseDICOMPreProcessor, BaseBrainPreProcessor):
                                             f'CQ500_{patient_id}_CT.nii.gz')
                 candidate_dicom_series.append(
                     FilePair(best_series_path, output_nifti))
-                self.logger.warning(
+                self.logger.info(
                     f'Found {len(found_series)} series matching the'
                     f' criteria for patient {patient_id}: '
                     f" {', '.join (str(f) for f in found_series)}")
