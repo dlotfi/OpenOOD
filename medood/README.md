@@ -7,14 +7,15 @@ testing OOD detection models in real-world healthcare scenarios.
 
 ## Installation
 
-Create a Python 3.10+ environment:
+#### Create a Python 3.10+ environment:
 
-```
+```sh
 conda create -n medood python==3.10.14
 ```
 
-Install requirements
-```
+#### Install requirements
+```sh
+conda activate medood
 pip install -r requirements.txt
 ```
 
