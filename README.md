@@ -58,12 +58,13 @@ Comments, issues, contributions, and collaborations are all welcomed!
 #### Create a Python 3.10+ environment:
 
 ```sh
-conda create -n openood python==3.10.14
+conda create -n mood python==3.10.14
 ```
 
 #### Install requirements
 ```sh
-conda activate openood
+conda activate mood
+pip install Cython>=0.29.30
 pip install -r requirements.txt
 ```
 
