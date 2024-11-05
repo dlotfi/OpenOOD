@@ -5,32 +5,45 @@ merge_option: default
 mark: default
 seed: 0
 
-dataset:
-  # cached features extracted from classifier
-  feat_root: './results/cifar10_resnet18_32x32_feat_extract_nflow_default/s0'
-
 num_gpus: 1
 num_workers: 8
 num_machines: 1
 machine_rank: 0
 
 pipeline:
-  name: train_nflow
+  name: train_med3d
 
 trainer:
-  name: nflow
+  name: med3d
 
 evaluator:
-  name: ood
+  name: base
 
 optimizer:
   name: adam
   num_epochs: 100
   lr: 0.0001
   betas: [0.5, 0.999]
-  grad_clip_norm: 5.0
-  weight_decay: 0.0
+  weight_decay: 0
+
+#optimizer:
+#  name: sgd
+#  num_epochs: 100
+#  lr: 0.1
+#  momentum: 0.9
+#  weight_decay: 0.0005
 
 recorder:
-  name: nflow
+  name: base
   save_all_models: False
+
+scheduler:
+  name: poly
+  power: 0.9
+
+#scheduler:
+#  name: cosine
+
+#loss:
+#  name: 'weighted-ce'
+#  weight: [0.6, 0.4]

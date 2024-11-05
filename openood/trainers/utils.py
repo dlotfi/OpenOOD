@@ -18,6 +18,7 @@ from .godin_trainer import GodinTrainer
 from .kdad_trainer import KdadTrainer
 from .logitnorm_trainer import LogitNormTrainer
 from .mcd_trainer import MCDTrainer
+from .med3d_trainer import Med3DTrainer
 from .mixup_trainer import MixupTrainer
 from .mos_trainer import MOSTrainer
 from .nflow_trainer import NormalizingFlowTrainer
@@ -40,7 +41,7 @@ from .reweightood_trainer import ReweightOODTrainer
 
 def get_trainer(net, train_loader: DataLoader, val_loader: DataLoader,
                 config: Config):
-    if type(train_loader) is DataLoader:
+    if isinstance(train_loader, DataLoader):
         trainers = {
             'base': BaseTrainer,
             'augmix': AugMixTrainer,
@@ -74,6 +75,7 @@ def get_trainer(net, train_loader: DataLoader, val_loader: DataLoader,
             't2fnorm': T2FNormTrainer,
             'reweightood': ReweightOODTrainer,
             'nflow': NormalizingFlowTrainer,
+            'med3d': Med3DTrainer,
         }
         if config.trainer.name in ['cider', 'npos']:
             return trainers[config.trainer.name](net, train_loader, val_loader,

@@ -9,6 +9,7 @@ from .test_ad_pipeline import TestAdPipeline
 from .test_ood_pipeline import TestOODPipeline
 from .train_ad_pipeline import TrainAdPipeline
 from .train_aux_pipeline import TrainARPLGANPipeline
+from .train_med3d_pipeline import TrainMed3DPipeline
 from .train_nflow_pipeline import TrainNormalizingFlowPipeline
 from .train_oe_pipeline import TrainOEPipeline
 # from .train_only_pipeline import TrainOpenGanPipeline
@@ -33,6 +34,7 @@ def get_pipeline(config: Config):
         'train_arplgan': TrainARPLGANPipeline,
         'test_ood_aps': TestOODPipelineAPS,
         'train_nflow': TrainNormalizingFlowPipeline,
+        'train_med3d': TrainMed3DPipeline,
     }
 
     return pipelines[config.pipeline.name](config)

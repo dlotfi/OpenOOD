@@ -6,6 +6,7 @@ from .csi_preprocessor import CSIPreprocessor
 from .cutpaste_preprocessor import CutPastePreprocessor
 from .draem_preprocessor import DRAEMPreprocessor
 from .augmix_preprocessor import AugMixPreprocessor
+from .med3d_preprocessor import Med3DPreprocessor, Med3DTestPreprocessor
 from .pixmix_preprocessor import PixMixPreprocessor
 from .randaugment_preprocessor import RandAugmentPreprocessor
 from .cutout_preprocessor import CutoutPreprocessor
@@ -25,11 +26,13 @@ def get_preprocessor(config: Config, split):
         'csi': CSIPreprocessor,
         'cider': CiderPreprocessor,
         'palm': PALMPreprocessor,
+        'med3d': Med3DPreprocessor,
     }
     test_preprocessors = {
         'base': TestStandardPreProcessor,
         'draem': DRAEMPreprocessor,
         'cutpaste': CutPastePreprocessor,
+        'med3d': Med3DTestPreprocessor,
     }
 
     if split == 'train':

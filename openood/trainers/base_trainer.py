@@ -1,3 +1,5 @@
+from typing import Callable
+
 import numpy as np
 import torch
 import torch.nn as nn
@@ -19,23 +21,9 @@ class BaseTrainer:
         self.train_loader = train_loader
         self.config = config
 
-        self.optimizer = torch.optim.SGD(
-            net.parameters(),
-            config.optimizer.lr,
-            momentum=config.optimizer.momentum,
-            weight_decay=config.optimizer.weight_decay,
-            nesterov=True,
-        )
-
-        self.scheduler = torch.optim.lr_scheduler.LambdaLR(
-            self.optimizer,
-            lr_lambda=lambda step: cosine_annealing(
-                step,
-                config.optimizer.num_epochs * len(train_loader),
-                1,
-                1e-6 / config.optimizer.lr,
-            ),
-        )
+        self.loss_fn = self.get_loss_fn()
+        self.optimizer = self.get_optimizer()
+        self.scheduler = self.get_scheduler()
 
     def train_epoch(self, epoch_idx):
         self.net.train()
@@ -55,7 +43,7 @@ class BaseTrainer:
 
             # forward
             logits_classifier = self.net(data)
-            loss = F.cross_entropy(logits_classifier, target)
+            loss = self.loss_fn(logits_classifier, target)
 
             # backward
             self.optimizer.zero_grad()
@@ -80,3 +68,27 @@ class BaseTrainer:
         total_losses_reduced = np.mean([x for x in all_loss])
 
         return total_losses_reduced
+
+    def get_optimizer(self):
+        return torch.optim.SGD(
+            self.net.parameters(),
+            self.config.optimizer.lr,
+            momentum=self.config.optimizer.momentum,
+            weight_decay=self.config.optimizer.weight_decay,
+            nesterov=True,
+        )
+
+    def get_scheduler(self):
+        return torch.optim.lr_scheduler.LambdaLR(
+            self.optimizer,
+            lr_lambda=lambda step: cosine_annealing(
+                step,
+                self.config.optimizer.num_epochs * len(self.train_loader),
+                1,
+                1e-6 / self.config.optimizer.lr,
+            ),
+        )
+
+    def get_loss_fn(self) \
+            -> Callable[[torch.Tensor, torch.Tensor], torch.Tensor]:
+        return F.cross_entropy

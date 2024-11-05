@@ -12,6 +12,7 @@ from .bit import KNOWN_MODELS
 from .conf_branch_net import ConfBranchNet
 from .csi_net import get_csi_linear_layers, CSINet
 from .cider_net import CIDERNet
+from .resnet3d import ResNet3D_18
 from .t2fnorm_net import T2FNormNet
 from .de_resnet18_256x256 import AttnBasicBlock, BN_layer, De_ResNet18_256x256
 from .densenet import DenseNet3
@@ -44,7 +45,13 @@ def get_network(network_config):
 
     num_classes = network_config.num_classes
 
-    if network_config.name == 'resnet18_28x28':
+    if network_config.name == 'resnet3d_18':
+        net = ResNet3D_18(num_classes=num_classes,
+                          in_channels=network_config.num_channels,
+                          pretrained=network_config.pretrained
+                          and network_config.checkpoint in {None, 'none'})
+
+    elif network_config.name == 'resnet18_28x28':
         net = ResNet18_28x28(num_classes=num_classes,
                              in_channels=network_config.num_channels)
 
@@ -411,6 +418,9 @@ def get_network(network_config):
         elif network_config.name == 'bit' and not network_config.normal_load:
             net.load_from(np.load(network_config.checkpoint))
         elif network_config.name == 'vit':
+            pass
+        elif 'resnet3d' in network_config.name and \
+             network_config.checkpoint in {None, 'none'}:
             pass
         else:
             try:

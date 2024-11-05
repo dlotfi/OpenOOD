@@ -2,6 +2,7 @@ import os
 import torch
 from numpy import load
 from torch.utils.data import DataLoader
+from monai.data import DataLoader as MonaiDataLoader
 
 from openood.preprocessors.test_preprocessor import TestStandardPreProcessor
 from openood.preprocessors.utils import get_preprocessor
@@ -12,6 +13,7 @@ from .imglist_dataset import ImglistDataset
 from .imglist_augmix_dataset import ImglistAugMixDataset
 from .imglist_extradata_dataset import (ImglistExtraDataDataset,
                                         TwoSourceSampler)
+from .med3d_imglist_dataset import Med3DImglistDataset
 from .udg_dataset import UDGDataset
 
 __all__ = (
@@ -28,7 +30,8 @@ def get_dataloader(config: Config):
         split_config = dataset_config[split]
         preprocessor = get_preprocessor(config, split)
         # weak augmentation for data_aux
-        data_aux_preprocessor = TestStandardPreProcessor(config)
+        data_aux_preprocessor = TestStandardPreProcessor(config) \
+            if split_config.dataset_class != 'Med3DImglistDataset' else None
 
         if split_config.dataset_class == 'ImglistExtraDataDataset':
             dataset = ImglistExtraDataDataset(
@@ -71,6 +74,21 @@ def get_dataloader(config: Config):
                                     num_workers=dataset_config.num_workers,
                                     sampler=sampler,
                                     drop_last=bool(split_config.drop_last))
+        elif split_config.dataset_class == 'Med3DImglistDataset':
+            dataset = Med3DImglistDataset(
+                name=dataset_config.name + '_' + split,
+                imglist_pth=split_config.imglist_pth,
+                data_dir=split_config.data_dir,
+                num_classes=dataset_config.num_classes,
+                num_channels=dataset_config.num_channels,
+                preprocessor=preprocessor)
+            dataloader = MonaiDataLoader(
+                dataset=dataset,
+                batch_size=split_config.batch_size,
+                shuffle=split_config.shuffle,
+                num_workers=dataset_config.num_workers,
+                drop_last=bool(split_config.drop_last),
+                pin_memory=torch.cuda.is_available())
         else:
             CustomDataset = eval(split_config.dataset_class)
             dataset = CustomDataset(
