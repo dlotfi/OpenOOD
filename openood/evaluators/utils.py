@@ -6,6 +6,7 @@ from .arpl_evaluator import ARPLEvaluator
 from .base_evaluator import BaseEvaluator
 from .ece_evaluator import ECEEvaluator
 from .fsood_evaluator import FSOODEvaluator
+from .med3d_evaluator import Med3DEvaluator
 from .ood_evaluator import OODEvaluator
 from .osr_evaluator import OSREvaluator
 from .patchcore_evaluator import PatchCoreEvaluator
@@ -21,6 +22,7 @@ def get_evaluator(config: Config):
         'ad': ADEvaluator,
         'mos': MOSEvaluator,
         'ece': ECEEvaluator,
-        'osr': OSREvaluator
+        'osr': OSREvaluator,
+        'med3d': Med3DEvaluator,
     }
     return evaluators[config.evaluator.name](config)

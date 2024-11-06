@@ -83,7 +83,10 @@ class TrainPipeline:
         test_metrics = evaluator.eval_acc(net, test_loader)
 
         if comm.is_main_process():
-            print('\nComplete Evaluation, Last accuracy {:.2f}'.format(
-                100.0 * test_metrics['acc']),
-                  flush=True)
+            self.report_test_metrics(test_metrics)
             print('Completed!', flush=True)
+
+    def report_test_metrics(self, test_metrics):
+        print('\nComplete Evaluation, Last accuracy {:.2f}'.format(
+            100.0 * test_metrics['acc']),
+              flush=True)

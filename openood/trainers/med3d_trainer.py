@@ -32,10 +32,9 @@ class Med3DTrainer(BaseTrainer):
         if scheduler_config is None:
             return type('DummyScheduler', (), {'step': lambda *a: None})()
         elif scheduler_config.name.lower() == 'cosine':
-            return optim.lr_scheduler.CosineAnnealingLR(
-                self.optimizer,
-                T_max=total_steps,
-                eta_min=1e-6 / self.config.optimizer.lr)
+            return optim.lr_scheduler.CosineAnnealingLR(self.optimizer,
+                                                        T_max=total_steps,
+                                                        eta_min=1e-6)
         elif scheduler_config.name.lower() == 'poly':
             return optim.lr_scheduler.PolynomialLR(
                 self.optimizer,

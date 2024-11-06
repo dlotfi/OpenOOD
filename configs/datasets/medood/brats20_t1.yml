@@ -2,10 +2,10 @@ dataset:
   name: brats20_t1
   num_classes: 2
   num_channels: 1
-  pre_size: [160, 160, 160]
-  image_size: [128, 128, 128]
+  pre_size: [128, 128, 128]
+  image_size: [112, 112, 112]
 
-  interpolation: bilinear
+  processing_type: medood
 
   num_workers: '@{num_workers}'
   num_gpus: '@{num_gpus}'
