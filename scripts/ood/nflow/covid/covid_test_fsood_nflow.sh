@@ -10,6 +10,7 @@ python main.py \
     configs/preprocessors/base_preprocessor.yml \
     configs/postprocessors/nflow.yml \
     --num_workers 8 \
+    --evaluator.ood_scheme fsood \
     --network.pretrained True \
     --network.checkpoint "./results/covid_nflow_nflow_e100_lr0.0001_default/s${SEED}/best_nflow.ckpt" None \
     --network.nflow.normalize_input True \
