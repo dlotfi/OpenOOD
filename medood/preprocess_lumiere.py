@@ -1,5 +1,6 @@
 import os
 import re
+from dataclasses import dataclass
 from typing import List
 
 from preprocessor_base import BaseBrainPreProcessor, FilePair
@@ -7,9 +8,15 @@ from preprocessor_config import PreProcessorBrainConfig
 from utils import find_all_files, random_sample
 
 
+@dataclass
+class LabeledFilePair(FilePair):
+    Label: str
+
+
 class LUMIERE_PreProcessor(BaseBrainPreProcessor):
     def find_and_sample_files(self,
-                              splits: List[str] = None) -> List[FilePair]:
+                              splits: List[str] = None
+                              ) -> List[LabeledFilePair]:
         pattern = re.compile(
             r'Patient-(\d{3})/(week-\d{3}(-\d+)?)/T1\.nii\.gz')
 
@@ -31,7 +38,10 @@ class LUMIERE_PreProcessor(BaseBrainPreProcessor):
             split_part = file.Match.group(2)
             output_name = f'LUMIERE_{number}_{split_part}_T1.nii.gz'
             output_path = os.path.join(self.cfg.output_dir, output_name)
-            paired_files.append(FilePair(file.FilePath, output_path))
+            paired_files.append(
+                LabeledFilePair(file.FilePath, output_path, 'HGG'))
+            # LUMIERE includes MRI data of 91 GBM patients. Glioblastoma (GBM)
+            # is the most aggressive and common type of high-grade glioma (HGG)
 
         self.logger.info(f'Sampled {len(paired_files)} files.')
         return paired_files

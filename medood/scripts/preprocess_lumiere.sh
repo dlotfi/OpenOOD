@@ -13,4 +13,5 @@ python preprocess_lumiere.py \
 python generate_imglist.py \
     --input_dir="$PROCESSED_DATASETS_DIR/lumiere_t1/" \
     --base_dir="$PROCESSED_DATASETS_DIR" \
-    --output_dir="$IMGLIST_DIR"
+    --output_dir="$IMGLIST_DIR" \
+    --labels LGG HGG
