@@ -60,10 +60,15 @@ class FeatExtractNormalizingFlowPipeline:
                           self.config.dataset.name)
         evaluator.extract(full_net, id_loader_dict['test'],
                           f'{self.config.dataset.name}_flow')
+        if 'csid' in ood_loader_dict:
+            for dataset_name, csid_dl in ood_loader_dict['csid'].items():
+                print(f'\t CSID {dataset_name} data...')
+                evaluator.extract(full_net.backbone, csid_dl, dataset_name)
+                evaluator.extract(full_net, csid_dl, f'{dataset_name}_flow')
         split_types = ['nearood', 'farood']
         for ood_split in split_types:
             for dataset_name, ood_dl in ood_loader_dict[ood_split].items():
-                print(f'\t OOD {ood_split}/{dataset_name} data...')
+                print(f'\t {ood_split.upper()} {dataset_name} data...')
                 evaluator.extract(full_net.backbone, ood_dl, dataset_name)
                 evaluator.extract(full_net, ood_dl, f'{dataset_name}_flow')
         print('\nComplete Feature Extraction!')

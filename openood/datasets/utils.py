@@ -120,17 +120,27 @@ def get_ood_dataloader(config: Config):
     # specify custom dataset class
     ood_config = config.ood_dataset
     CustomDataset = eval(ood_config.dataset_class)
-    dataloader_dict = {}
-    for split in ood_config.split_names:
-        split_config = ood_config[split]
-        preprocessor = get_preprocessor(config, split)
-        data_aux_preprocessor = TestStandardPreProcessor(config)
-        if split == 'val':
-            # validation set
+
+    def get_loader(name, imglist_pth, data_dir, preprocessor,
+                   data_aux_preprocessor):
+        if ood_config.dataset_class == 'Med3DImglistDataset':
+            dataset = Med3DImglistDataset(name=name,
+                                          imglist_pth=imglist_pth,
+                                          data_dir=data_dir,
+                                          num_classes=ood_config.num_classes,
+                                          num_channels=ood_config.num_channels,
+                                          preprocessor=preprocessor)
+            dataloader = MonaiDataLoader(dataset=dataset,
+                                         batch_size=ood_config.batch_size,
+                                         shuffle=ood_config.shuffle,
+                                         num_workers=ood_config.num_workers,
+                                         drop_last=bool(ood_config.drop_last),
+                                         pin_memory=torch.cuda.is_available())
+        else:
             dataset = CustomDataset(
-                name=ood_config.name + '_' + split,
-                imglist_pth=split_config.imglist_pth,
-                data_dir=split_config.data_dir,
+                name=name,
+                imglist_pth=imglist_pth,
+                data_dir=data_dir,
                 num_classes=ood_config.num_classes,
                 preprocessor=preprocessor,
                 data_aux_preprocessor=data_aux_preprocessor)
@@ -138,24 +148,33 @@ def get_ood_dataloader(config: Config):
                                     batch_size=ood_config.batch_size,
                                     shuffle=ood_config.shuffle,
                                     num_workers=ood_config.num_workers)
-            dataloader_dict[split] = dataloader
+        return dataloader
+
+    dataloader_dict = {}
+    for split in ood_config.split_names:
+        split_config = ood_config[split]
+        preprocessor = get_preprocessor(config, split)
+        data_aux_preprocessor = TestStandardPreProcessor(config) \
+            if ood_config.dataset_class != 'Med3DImglistDataset' else None
+        if split == 'val':
+            # validation set
+            dataloader_dict[split] = get_loader(
+                name=ood_config.name + '_' + split,
+                imglist_pth=split_config.imglist_pth,
+                data_dir=split_config.data_dir,
+                preprocessor=preprocessor,
+                data_aux_preprocessor=data_aux_preprocessor)
         else:
             # dataloaders for csid, nearood, farood
             sub_dataloader_dict = {}
             for dataset_name in split_config.datasets:
                 dataset_config = split_config[dataset_name]
-                dataset = CustomDataset(
+                sub_dataloader_dict[dataset_name] = get_loader(
                     name=ood_config.name + '_' + split,
                     imglist_pth=dataset_config.imglist_pth,
                     data_dir=dataset_config.data_dir,
-                    num_classes=ood_config.num_classes,
                     preprocessor=preprocessor,
                     data_aux_preprocessor=data_aux_preprocessor)
-                dataloader = DataLoader(dataset,
-                                        batch_size=ood_config.batch_size,
-                                        shuffle=ood_config.shuffle,
-                                        num_workers=ood_config.num_workers)
-                sub_dataloader_dict[dataset_name] = dataloader
             dataloader_dict[split] = sub_dataloader_dict
 
     return dataloader_dict

@@ -20,7 +20,9 @@ __all__ = ('scienceplots', )
 plt.style.use(['science', 'no-latex'])
 
 
-def get_label(split_name: str, datasets: List[str] = None):
+def _get_label(split_name: str,
+               datasets: List[str] = None,
+               max_length: int = 75):
     labels = {
         'nearood': 'Near OOD',
         'farood': 'Far OOD',
@@ -32,11 +34,15 @@ def get_label(split_name: str, datasets: List[str] = None):
     }
     label = labels[split_name]
     if datasets is not None:
-        label += f' ({", ".join(datasets)})'
+        dataset_names = ', '.join(datasets).replace('_', '-')
+        if len(dataset_names) > max_length:
+            dataset_names = dataset_names[:max_length] + ' ...'
+        label += f' ({dataset_names})'
+
     return label
 
 
-def remove_outlier_data(values, method='zscore', sigma=3.0):
+def _remove_outlier_data(values, method='zscore', sigma=3.0):
     if method is None:
         keep_indices = np.ones(len(values), dtype=bool)
     elif method == 'zscore':
@@ -57,7 +63,7 @@ def remove_outlier_data(values, method='zscore', sigma=3.0):
     return keep_indices
 
 
-def evaluate_data(values):
+def _evaluate_data(values):
     # Center and scale the data
     values_mean = np.mean(np.array(values, np.float64))
     values_std = np.std(np.array(values, np.float64))
@@ -75,26 +81,26 @@ def evaluate_data(values):
     return np.inf if np.isnan(score) else score
 
 
-def remove_outliers(scores,
-                    features=None,
-                    method='auto',
-                    sigma=3.0,
-                    keep_ratio_threshold=0.5):
+def _remove_outliers(scores,
+                     features=None,
+                     method='auto',
+                     sigma=3.0,
+                     keep_ratio_threshold=0.5):
     if method != 'auto':
-        best_indices = remove_outlier_data(scores, method, sigma)
+        best_indices = _remove_outlier_data(scores, method, sigma)
     else:
         methods = ['zscore', 'iqr', 'mad']
         sigmas = np.arange(0.25, 4.5, 0.25)
         best_indices = np.ones(len(scores), dtype=bool)
-        best_score = evaluate_data(scores[best_indices])
+        best_score = _evaluate_data(scores[best_indices])
         best_method = None
         best_sigma = None
         for method in methods:
             for sigma in sigmas:
-                keep_indices = remove_outlier_data(scores, method, sigma)
+                keep_indices = _remove_outlier_data(scores, method, sigma)
                 if np.sum(keep_indices) < keep_ratio_threshold * len(scores):
                     continue
-                score = evaluate_data(scores[keep_indices])
+                score = _evaluate_data(scores[keep_indices])
                 if score < best_score:
                     best_score = score
                     best_method = method
@@ -111,7 +117,7 @@ def remove_outliers(scores,
     return scores[best_indices]
 
 
-def tsne_compute(feats_dict: Dict[str, array], n_components=50):
+def _tsne_compute(feats_dict: Dict[str, array], n_components=50):
     start_time = time.time()
     # Concatenate all arrays in feats_dict
     all_feats = np.concatenate(list(feats_dict.values()))
@@ -122,7 +128,7 @@ def tsne_compute(feats_dict: Dict[str, array], n_components=50):
     if n_components < all_feats.shape[1]:
         pca = PCA(n_components)
         all_feats = pca.fit_transform(all_feats)
-    tsne = TSNE(n_components=2, verbose=0, perplexity=40, n_iter=2000)
+    tsne = TSNE(n_components=2, verbose=0, perplexity=40, max_iter=2000)
     tsne_pos_all = tsne.fit_transform(all_feats)
     # Split the transformed data back into separate arrays
     tsne_pos_dict = {}
@@ -140,7 +146,7 @@ def tsne_compute(feats_dict: Dict[str, array], n_components=50):
     return tsne_pos_dict
 
 
-def load_scores(score_dir: str, datasets: List[str]):
+def _load_scores(score_dir: str, datasets: List[str]):
     score_list = []
     for dataset in datasets:
         feature_dict = np.load(f'{score_dir}/{dataset}.npz')
@@ -158,35 +164,39 @@ def plot_spectrum(datasets: dict,
                   log_scale=False):
     score_dir = os.path.normpath(score_dir)
     out_dir = os.path.normpath(out_dir)
-    id_scores = load_scores(score_dir, datasets['id'])
-    # csid_scores = load_scores(score_dir, datasets['csid'])
-    nearood_scores = load_scores(score_dir, datasets['nearood'])
-    farood_scores = load_scores(score_dir, datasets['farood'])
+    id_scores = _load_scores(score_dir, datasets['id'])
+    csid_scores = None
+    if 'csid' in datasets:
+        csid_scores = _load_scores(score_dir, datasets['csid'])
+    nearood_scores = _load_scores(score_dir, datasets['nearood'])
+    farood_scores = _load_scores(score_dir, datasets['farood'])
 
-    id_scores = remove_outliers(id_scores,
-                                method=outlier_method,
-                                sigma=outlier_sigma,
-                                keep_ratio_threshold=keep_ratio_thresh)
-    # csid_scores = remove_outliers(csid_scores,
-    #                               method=outlier_method,
-    #                               threshold=outlier_sigma,
-    #                               keep_ratio_threshold=keep_ratio_thresh)
-    nearood_scores = remove_outliers(nearood_scores,
+    id_scores = _remove_outliers(id_scores,
+                                 method=outlier_method,
+                                 sigma=outlier_sigma,
+                                 keep_ratio_threshold=keep_ratio_thresh)
+    if csid_scores is not None:
+        csid_scores = _remove_outliers(csid_scores,
+                                       method=outlier_method,
+                                       sigma=outlier_sigma,
+                                       keep_ratio_threshold=keep_ratio_thresh)
+    nearood_scores = _remove_outliers(nearood_scores,
+                                      method=outlier_method,
+                                      sigma=outlier_sigma,
+                                      keep_ratio_threshold=keep_ratio_thresh)
+    # farood_scores = farood_scores[farood_scores > 1000]
+    farood_scores = _remove_outliers(farood_scores,
                                      method=outlier_method,
                                      sigma=outlier_sigma,
                                      keep_ratio_threshold=keep_ratio_thresh)
-    # farood_scores = farood_scores[farood_scores > 1000]
-    farood_scores = remove_outliers(farood_scores,
-                                    method=outlier_method,
-                                    sigma=outlier_sigma,
-                                    keep_ratio_threshold=keep_ratio_thresh)
 
     scores_dict = {
         'farood': farood_scores,
         'nearood': nearood_scores,
-        # 'csid': csid_scores,
         'id': id_scores
     }
+    if csid_scores is not None:
+        scores_dict['csid'] = csid_scores
 
     print('Plotting histogram of log-likelihood', flush=True)
     n_bins = 500
@@ -197,7 +207,7 @@ def plot_spectrum(datasets: dict,
                  density=True,
                  weights=np.ones(len(scores)) / len(scores),
                  alpha=0.5,
-                 label=get_label(key, datasets[key]),
+                 label=_get_label(key, datasets[key]),
                  log=log_scale)
 
     plt.yticks([])
@@ -206,11 +216,11 @@ def plot_spectrum(datasets: dict,
     plt.savefig(f'{out_dir}/spectrum.png', bbox_inches='tight')
 
 
-def load_features(datasets: List[str],
-                  feat_dir: str,
-                  score_dir: str = None,
-                  n_samples: int = None,
-                  sample_rate: float = 1):
+def _load_features(datasets: List[str],
+                   feat_dir: str,
+                   score_dir: str = None,
+                   n_samples: int = None,
+                   sample_rate: float = 1):
     feat_list = []
     feat_flow_list = []
     score_list = []
@@ -254,15 +264,15 @@ def load_features(datasets: List[str],
     return feat_list, feat_flow_list
 
 
-def draw_tsne_plot(feats_dict, title, output_path, datasets):
+def _draw_tsne_plot(feats_dict, title, output_path, datasets):
     plt.figure(figsize=(8, 8), dpi=300)
-    tsne_feats_dict = tsne_compute(feats_dict)
+    tsne_feats_dict = _tsne_compute(feats_dict)
     for key, tsne_feats in tsne_feats_dict.items():
         plt.scatter(tsne_feats[:, 0],
                     tsne_feats[:, 1],
                     s=10,
                     alpha=0.5,
-                    label=get_label(key, datasets.get(key, None)))
+                    label=_get_label(key, datasets.get(key, None)))
     plt.axis('off')
     plt.legend(loc='upper left', fontsize='small')
     plt.title(title)
@@ -273,53 +283,64 @@ def plot_tsne(datasets: dict, feat_dir: str, out_dir: str,
               normalize_feats: bool):
     feat_dir = os.path.normpath(feat_dir)
     out_dir = os.path.normpath(out_dir)
-    id_feats, id_feats_flow = load_features(datasets['id'],
-                                            feat_dir,
-                                            n_samples=1000)
-    nearood_feats, nearood_feats_flow = load_features(datasets['nearood'],
-                                                      feat_dir,
-                                                      n_samples=1000)
-    farood_feats, farood_feats_flow = load_features(datasets['farood'],
-                                                    feat_dir,
-                                                    n_samples=1000)
+    id_feats, id_feats_flow = _load_features(datasets['id'],
+                                             feat_dir,
+                                             n_samples=1000)
+    csid_feats, csid_feats_flow = None, None
+    if 'csid' in datasets:
+        csid_feats, csid_feats_flow = _load_features(datasets['csid'],
+                                                     feat_dir,
+                                                     n_samples=1000)
+    nearood_feats, nearood_feats_flow = _load_features(datasets['nearood'],
+                                                       feat_dir,
+                                                       n_samples=1000)
+    farood_feats, farood_feats_flow = _load_features(datasets['farood'],
+                                                     feat_dir,
+                                                     n_samples=1000)
     if normalize_feats:
         feats_dict = {
             'farood': normalize(farood_feats, norm='l2', axis=1),
             'nearood': normalize(nearood_feats, norm='l2', axis=1),
             'id': normalize(id_feats, norm='l2', axis=1)
         }
+        if csid_feats is not None:
+            feats_dict['csid'] = normalize(csid_feats, norm='l2', axis=1)
     else:
         feats_dict = {
             'farood': farood_feats,
             'nearood': nearood_feats,
             'id': id_feats
         }
+        if csid_feats is not None:
+            feats_dict['csid'] = csid_feats
     feats_flow_dict = {
         'farood': farood_feats_flow,
         'nearood': nearood_feats_flow,
         'id': id_feats_flow
     }
+    if csid_feats_flow is not None:
+        feats_flow_dict['csid'] = csid_feats_flow
 
     print('Plotting t-SNE for features', flush=True)
     if normalize_feats:
-        draw_tsne_plot(
+        _draw_tsne_plot(
             feats_dict,
             't-SNE for Normalized Backbone Features of ID and OOD Samples',
             f'{out_dir}/tsne_features_normalized.png', datasets)
     else:
-        draw_tsne_plot(feats_dict,
-                       't-SNE for Backbone Features of ID and OOD Samples',
-                       f'{out_dir}/tsne_features.png', datasets)
-    draw_tsne_plot(
+        _draw_tsne_plot(feats_dict,
+                        't-SNE for Backbone Features of ID and OOD Samples',
+                        f'{out_dir}/tsne_features.png', datasets)
+    _draw_tsne_plot(
         feats_flow_dict,
         't-SNE for Normalizing Flow Features of ID and OOD Samples',
         f'{out_dir}/tsne_features_flow.png', datasets)
 
 
-def draw_tsne_score_plot(feats_dict, scores_dict, title, output_path,
-                         colored_id, log_scale, datasets):
+def _draw_tsne_score_plot(feats_dict, scores_dict, title, output_path,
+                          colored_id, log_scale, datasets):
     plt.figure(figsize=(10, 8), dpi=300)
-    tsne_feats_dict = tsne_compute(feats_dict)
+    tsne_feats_dict = _tsne_compute(feats_dict)
     excluded_id_key = 'id' if not colored_id else 'something_else'
     all_scores = np.concatenate([
         scores for key, scores in scores_dict.items() if key != excluded_id_key
@@ -341,7 +362,7 @@ def draw_tsne_score_plot(feats_dict, scores_dict, title, output_path,
                         s=10,
                         alpha=0.2,
                         marker=markers[key],
-                        label=get_label(key, datasets[key]),
+                        label=_get_label(key, datasets[key]),
                         c='grey')
         else:
             plt.scatter(tsne_feats[:, 0],
@@ -349,7 +370,7 @@ def draw_tsne_score_plot(feats_dict, scores_dict, title, output_path,
                         s=10,
                         alpha=0.5,
                         marker=markers[key],
-                        label=get_label(key, datasets[key]),
+                        label=_get_label(key, datasets[key]),
                         c=scores,
                         cmap=cmap,
                         norm=norm)
@@ -376,58 +397,75 @@ def plot_tsne_score(datasets: dict,
     feat_dir = os.path.normpath(feat_dir)
     score_dir = os.path.normpath(score_dir)
     out_dir = os.path.normpath(out_dir)
-    id_feats, _, id_scores = load_features(datasets['id'],
-                                           feat_dir,
-                                           score_dir,
-                                           n_samples=1000)
-    nearood_feats, _, nearood_scores = load_features(datasets['nearood'],
-                                                     feat_dir,
-                                                     score_dir,
-                                                     n_samples=1000)
-    farood_feats, _, farood_scores = load_features(datasets['farood'],
-                                                   feat_dir,
-                                                   score_dir,
-                                                   n_samples=1000)
+    id_feats, _, id_scores = _load_features(datasets['id'],
+                                            feat_dir,
+                                            score_dir,
+                                            n_samples=1000)
+    csid_feats, csid_scores = None, None
+    if 'csid' in datasets:
+        csid_feats, _, csid_scores = _load_features(datasets['csid'],
+                                                    feat_dir,
+                                                    score_dir,
+                                                    n_samples=1000)
+    nearood_feats, _, nearood_scores = _load_features(datasets['nearood'],
+                                                      feat_dir,
+                                                      score_dir,
+                                                      n_samples=1000)
+    farood_feats, _, farood_scores = _load_features(datasets['farood'],
+                                                    feat_dir,
+                                                    score_dir,
+                                                    n_samples=1000)
 
-    id_scores, id_feats = remove_outliers(id_scores, id_feats, outlier_method,
-                                          outlier_sigma, keep_ratio_thresh)
-    nearood_scores, nearood_feats = remove_outliers(nearood_scores,
-                                                    nearood_feats,
-                                                    outlier_method,
-                                                    outlier_sigma,
-                                                    keep_ratio_thresh)
-    farood_scores, farood_feats = remove_outliers(farood_scores, farood_feats,
-                                                  outlier_method,
-                                                  outlier_sigma,
-                                                  keep_ratio_thresh)
+    id_scores, id_feats = _remove_outliers(id_scores, id_feats, outlier_method,
+                                           outlier_sigma, keep_ratio_thresh)
+    if csid_scores is not None:
+        csid_scores, csid_feats = _remove_outliers(csid_scores, csid_feats,
+                                                   outlier_method,
+                                                   outlier_sigma,
+                                                   keep_ratio_thresh)
+    nearood_scores, nearood_feats = _remove_outliers(nearood_scores,
+                                                     nearood_feats,
+                                                     outlier_method,
+                                                     outlier_sigma,
+                                                     keep_ratio_thresh)
+    farood_scores, farood_feats = _remove_outliers(farood_scores, farood_feats,
+                                                   outlier_method,
+                                                   outlier_sigma,
+                                                   keep_ratio_thresh)
 
     if normalize_feats:
         feats_dict = {
             'farood': normalize(farood_feats, norm='l2', axis=1),
             'nearood': normalize(nearood_feats, norm='l2', axis=1),
-            'id': normalize(id_feats, norm='l2', axis=1)
+            'id': normalize(id_feats, norm='l2', axis=1),
         }
+        if csid_feats is not None:
+            feats_dict['csid'] = normalize(csid_feats, norm='l2', axis=1)
     else:
         feats_dict = {
             'farood': farood_feats,
             'nearood': nearood_feats,
-            'id': id_feats,
+            'id': id_feats
         }
+        if csid_feats is not None:
+            feats_dict['csid'] = csid_feats
     scores_dict = {
         'farood': farood_scores,
         'nearood': nearood_scores,
-        'id': id_scores,
+        'id': id_scores
     }
+    if csid_scores is not None:
+        scores_dict['csid'] = csid_scores
 
     print('Plotting t-SNE for features', flush=True)
     if normalize_feats:
-        draw_tsne_score_plot(
+        _draw_tsne_score_plot(
             feats_dict, scores_dict,
             't-SNE for Normalized Backbone Features of ID and OOD Samples',
             f'{out_dir}/tsne_features_scores_normalized.png', colored_id,
             log_scale, datasets)
     else:
-        draw_tsne_score_plot(
+        _draw_tsne_score_plot(
             feats_dict, scores_dict,
             't-SNE for Backbone Features of ID and OOD Samples',
             f'{out_dir}/tsne_features_scores.png', colored_id, log_scale,
