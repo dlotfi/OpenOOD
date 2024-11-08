@@ -2,7 +2,6 @@
 from copy import deepcopy
 import numpy as np
 import torch
-import torch.backends.cudnn as cudnn
 import torch.nn as nn
 # from mmcls.apis import init_model
 
@@ -464,5 +463,5 @@ def get_network(network_config):
         else:
             net.cuda()
 
-    cudnn.benchmark = True
+    # cudnn.benchmark = True
     return net

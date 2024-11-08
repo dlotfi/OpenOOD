@@ -73,10 +73,15 @@ class FeatExtractNormalizingFlowPipeline:
         setup_logger(self.config)
 
         # set random seed
-        # for deterministic training
-        torch.manual_seed(self.config.seed)
-        np.random.seed(self.config.seed)
-        random.seed(self.config.seed)
+        try:
+            from monai.utils import set_determinism
+            set_determinism(seed=self.config.seed,
+                            use_deterministic_algorithms=True)
+        except ImportError:
+            torch.manual_seed(self.config.seed)
+            np.random.seed(self.config.seed)
+            random.seed(self.config.seed)
+            torch.use_deterministic_algorithms(True)
 
         # get dataloader
         id_loader_dict = get_dataloader(self.config)

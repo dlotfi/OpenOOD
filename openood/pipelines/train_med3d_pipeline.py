@@ -8,9 +8,8 @@ class TrainMed3DPipeline(TrainPipeline):
         super(TrainMed3DPipeline, self).__init__(config)
 
     def run(self):
-        set_determinism(seed=self.config.seed)
-        # torch.backends.cudnn.benchmark = True
-        # torch.backends.cudnn.deterministic = False
+        set_determinism(seed=self.config.seed,
+                        use_deterministic_algorithms=True)
         super().run()
 
     def report_test_metrics(self, test_metrics):
