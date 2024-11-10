@@ -18,7 +18,7 @@ ood_dataset:
   nearood:
     datasets: [brats20_t1_transformed_motion, brats20_t1_transformed_ghost,
                brats20_t1_transformed_bias, brats20_t1_transformed_spike,
-               brats20_t1_transformed_gaussian, brats20_t1_transformed_downsampling,
+               brats20_t1_transformed_noise, brats20_t1_transformed_downsampling,
                brats20_t1_transformed_scaling, brats20_t1_transformed_gamma,
                brats20_t1_transformed_truncation, brats20_t1_transformed_registration,
                brats23_ped_t1, brats23_ssa_t1]
@@ -34,9 +34,9 @@ ood_dataset:
     brats20_t1_transformed_spike:
       data_dir: ./data/medood/
       imglist_pth: ./data/benchmark_imglist/medood/test_brats20_t1_transformed_spike.txt
-    brats20_t1_transformed_gaussian:
+    brats20_t1_transformed_noise:
       data_dir: ./data/medood/
-      imglist_pth: ./data/benchmark_imglist/medood/test_brats20_t1_transformed_gaussian.txt
+      imglist_pth: ./data/benchmark_imglist/medood/test_brats20_t1_transformed_noise.txt
     brats20_t1_transformed_downsampling:
       data_dir: ./data/medood/
       imglist_pth: ./data/benchmark_imglist/medood/test_brats20_t1_transformed_downsampling.txt

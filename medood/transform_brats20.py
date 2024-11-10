@@ -21,7 +21,7 @@ class BraTS20_Transformer(BaseBrainPreProcessor):
         'Ghost': ghost_artifact,
         'Bias': bias_artifact,
         'Spike': spike_artifact,
-        'Gaussian': gaussian_noise,
+        'Noise': gaussian_noise,
         'Downsampling': downsampling,
         'Scaling': scaling_perturbation,
         'Gamma': gamma_alteration,
