@@ -180,11 +180,12 @@ def plot_spectrum(datasets: dict,
                                        method=outlier_method,
                                        sigma=outlier_sigma,
                                        keep_ratio_threshold=keep_ratio_thresh)
+    # nearood_scores = nearood_scores[nearood_scores > -1500]
     nearood_scores = _remove_outliers(nearood_scores,
                                       method=outlier_method,
                                       sigma=outlier_sigma,
                                       keep_ratio_threshold=keep_ratio_thresh)
-    # farood_scores = farood_scores[farood_scores > 1000]
+    # farood_scores = farood_scores[farood_scores > -1500]
     farood_scores = _remove_outliers(farood_scores,
                                      method=outlier_method,
                                      sigma=outlier_sigma,
@@ -345,7 +346,7 @@ def _draw_tsne_score_plot(feats_dict, scores_dict, title, output_path,
     all_scores = np.concatenate([
         scores for key, scores in scores_dict.items() if key != excluded_id_key
     ])
-    markers = {'farood': 's', 'nearood': '^', 'id': 'o'}
+    markers = {'farood': 's', 'nearood': '^', 'id': 'o', 'csid': 'D'}
     cmap = plt.cm.rainbow
     if log_scale:
         min_score = all_scores.min()
@@ -507,17 +508,22 @@ if __name__ == '__main__':
     parser.add_argument('--normalize_feats',
                         action='store_true',
                         help='Draw t-SNE plots with L2 normalized features')
+    parser.add_argument('--ood_scheme',
+                        default='ood',
+                        choices=['ood', 'fsood'],
+                        help='OOD scheme to visualize (ood, fsood)')
     opt, unknown_args = parser.parse_known_args()
     config = merge_configs(*[Config(path) for path in opt.config])
     # set random seed
     np.random.seed(opt.seed)
     # draw plots
     datasets = {
-        # 'csid_datasets': config.fsood_dataset.csid.datasets,
         'farood': config.ood_dataset.farood.datasets,
         'nearood': config.ood_dataset.nearood.datasets,
         'id': [config.dataset.name]
     }
+    if opt.ood_scheme == 'fsood':
+        datasets['csid'] = config.ood_dataset.csid.datasets
     plot_spectrum(datasets, opt.score_dir, opt.out_dir, opt.outlier_method,
                   opt.outlier_sigma, opt.outlier_thresh, opt.log_scale)
     plot_tsne(datasets, opt.feat_dir, opt.out_dir, opt.normalize_feats)

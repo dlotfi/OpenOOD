@@ -23,7 +23,8 @@ python visualize.py \
     --config configs/datasets/medood/brats20_t1.yml \
     configs/datasets/medood/brats20_t1_fsood.yml \
     --score_dir "./results/brats20_t1_nflow_test_ood_ood_nflow_default/s${SEED}/fsood/scores" \
-    --feat_dir "./results/brats20_t1_nflow_feat_extract_nflow" \
+    --feat_dir "./results/brats20_t1_nflow_feat_extract_nflow_default" \
     --out_dir "./results/brats20_t1_nflow_test_ood_ood_nflow_default/s${SEED}/fsood" \
     --normalize_feats \
+    --ood_scheme fsood \
     --seed ${SEED}
