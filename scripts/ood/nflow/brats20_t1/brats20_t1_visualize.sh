@@ -26,5 +26,7 @@ python visualize.py \
     --feat_dir "./results/brats20_t1_nflow_feat_extract_nflow_default" \
     --out_dir "./results/brats20_t1_nflow_test_ood_ood_nflow_default/s${SEED}/fsood" \
     --normalize_feats \
-    --ood_scheme fsood \
+    --splits nearood farood csid \
+#    --cut_value -1500 \
+#    --plots spectrum \
     --seed ${SEED}

@@ -27,16 +27,19 @@ def _get_label(split_name: str,
         'nearood': 'Near OOD',
         'farood': 'Far OOD',
         'csid': 'Covariate-Shift ID',
-        'id': 'ID',
-        'flow_id': 'Flow ID',
-        'flow_farood': 'Flow Far OOD',
-        'flow_nearood': 'Flow Near OOD',
+        'id': 'ID'
     }
-    label = labels[split_name]
+    if split_name in labels:
+        label = labels[split_name]
+    elif split_name.startswith('flow') and split_name.split('_')[1] in labels:
+        label = 'Flow ' + labels[split_name.split('_')[1]]
+    else:
+        # split by '_' and capitalize each word
+        label = ' '.join([word.capitalize() for word in split_name.split('_')])
     if datasets is not None:
         dataset_names = ', '.join(datasets).replace('_', '-')
-        if len(dataset_names) > max_length:
-            dataset_names = dataset_names[:max_length] + ' ...'
+        if len(dataset_names) + len(label) > max_length:
+            dataset_names = dataset_names[:max_length - len(label)] + ' ...'
         label += f' ({dataset_names})'
 
     return label
@@ -158,46 +161,24 @@ def _load_scores(score_dir: str, datasets: List[str]):
 def plot_spectrum(datasets: dict,
                   score_dir: str,
                   out_dir: str,
+                  cut_value: float = None,
                   outlier_method: str = None,
                   outlier_sigma=3.0,
                   keep_ratio_thresh=0.5,
                   log_scale=False):
     score_dir = os.path.normpath(score_dir)
     out_dir = os.path.normpath(out_dir)
-    id_scores = _load_scores(score_dir, datasets['id'])
-    csid_scores = None
-    if 'csid' in datasets:
-        csid_scores = _load_scores(score_dir, datasets['csid'])
-    nearood_scores = _load_scores(score_dir, datasets['nearood'])
-    farood_scores = _load_scores(score_dir, datasets['farood'])
 
-    id_scores = _remove_outliers(id_scores,
-                                 method=outlier_method,
-                                 sigma=outlier_sigma,
-                                 keep_ratio_threshold=keep_ratio_thresh)
-    if csid_scores is not None:
-        csid_scores = _remove_outliers(csid_scores,
-                                       method=outlier_method,
-                                       sigma=outlier_sigma,
-                                       keep_ratio_threshold=keep_ratio_thresh)
-    # nearood_scores = nearood_scores[nearood_scores > -1500]
-    nearood_scores = _remove_outliers(nearood_scores,
-                                      method=outlier_method,
-                                      sigma=outlier_sigma,
-                                      keep_ratio_threshold=keep_ratio_thresh)
-    # farood_scores = farood_scores[farood_scores > -1500]
-    farood_scores = _remove_outliers(farood_scores,
-                                     method=outlier_method,
-                                     sigma=outlier_sigma,
-                                     keep_ratio_threshold=keep_ratio_thresh)
-
-    scores_dict = {
-        'farood': farood_scores,
-        'nearood': nearood_scores,
-        'id': id_scores
-    }
-    if csid_scores is not None:
-        scores_dict['csid'] = csid_scores
+    scores_dict = {}
+    for split_name, dataset_list in datasets.items():
+        scores = _load_scores(score_dir, dataset_list)
+        if cut_value is not None:
+            scores = scores[scores > cut_value]
+        scores = _remove_outliers(scores,
+                                  method=outlier_method,
+                                  sigma=outlier_sigma,
+                                  keep_ratio_threshold=keep_ratio_thresh)
+        scores_dict[split_name] = scores
 
     print('Plotting histogram of log-likelihood', flush=True)
     n_bins = 500
@@ -214,7 +195,8 @@ def plot_spectrum(datasets: dict,
     plt.yticks([])
     plt.legend(loc='upper left', fontsize='small')
     plt.title('Log-Likelihood for ID and OOD Samples')
-    plt.savefig(f'{out_dir}/spectrum.png', bbox_inches='tight')
+    cut_value_str = f'_cut{cut_value}' if cut_value is not None else ''
+    plt.savefig(f'{out_dir}/spectrum{cut_value_str}.png', bbox_inches='tight')
 
 
 def _load_features(datasets: List[str],
@@ -284,43 +266,19 @@ def plot_tsne(datasets: dict, feat_dir: str, out_dir: str,
               normalize_feats: bool):
     feat_dir = os.path.normpath(feat_dir)
     out_dir = os.path.normpath(out_dir)
-    id_feats, id_feats_flow = _load_features(datasets['id'],
-                                             feat_dir,
-                                             n_samples=1000)
-    csid_feats, csid_feats_flow = None, None
-    if 'csid' in datasets:
-        csid_feats, csid_feats_flow = _load_features(datasets['csid'],
-                                                     feat_dir,
-                                                     n_samples=1000)
-    nearood_feats, nearood_feats_flow = _load_features(datasets['nearood'],
-                                                       feat_dir,
-                                                       n_samples=1000)
-    farood_feats, farood_feats_flow = _load_features(datasets['farood'],
-                                                     feat_dir,
-                                                     n_samples=1000)
-    if normalize_feats:
-        feats_dict = {
-            'farood': normalize(farood_feats, norm='l2', axis=1),
-            'nearood': normalize(nearood_feats, norm='l2', axis=1),
-            'id': normalize(id_feats, norm='l2', axis=1)
-        }
-        if csid_feats is not None:
-            feats_dict['csid'] = normalize(csid_feats, norm='l2', axis=1)
-    else:
-        feats_dict = {
-            'farood': farood_feats,
-            'nearood': nearood_feats,
-            'id': id_feats
-        }
-        if csid_feats is not None:
-            feats_dict['csid'] = csid_feats
-    feats_flow_dict = {
-        'farood': farood_feats_flow,
-        'nearood': nearood_feats_flow,
-        'id': id_feats_flow
-    }
-    if csid_feats_flow is not None:
-        feats_flow_dict['csid'] = csid_feats_flow
+
+    feats_dict = {}
+    feats_flow_dict = {}
+
+    for split_name, dataset_list in datasets.items():
+        feats, feats_flow = _load_features(dataset_list,
+                                           feat_dir,
+                                           n_samples=1000)
+        if normalize_feats:
+            feats_dict[split_name] = normalize(feats, norm='l2', axis=1)
+        else:
+            feats_dict[split_name] = feats
+        feats_flow_dict[split_name] = feats_flow
 
     print('Plotting t-SNE for features', flush=True)
     if normalize_feats:
@@ -342,11 +300,8 @@ def _draw_tsne_score_plot(feats_dict, scores_dict, title, output_path,
                           colored_id, log_scale, datasets):
     plt.figure(figsize=(10, 8), dpi=300)
     tsne_feats_dict = _tsne_compute(feats_dict)
-    excluded_id_key = 'id' if not colored_id else 'something_else'
-    all_scores = np.concatenate([
-        scores for key, scores in scores_dict.items() if key != excluded_id_key
-    ])
-    markers = {'farood': 's', 'nearood': '^', 'id': 'o', 'csid': 'D'}
+    all_scores = np.concatenate(
+        [scores for key, scores in scores_dict.items()])
     cmap = plt.cm.rainbow
     if log_scale:
         min_score = all_scores.min()
@@ -355,26 +310,35 @@ def _draw_tsne_score_plot(feats_dict, scores_dict, title, output_path,
         norm = mcolors.LogNorm(vmin=all_scores.min(), vmax=all_scores.max())
     else:
         norm = mcolors.Normalize(vmin=all_scores.min(), vmax=all_scores.max())
-    for i, (key, tsne_feats) in enumerate(tsne_feats_dict.items()):
+    markers = [
+        'o', 's', '^', 'D', 'v', 'p', '*', 'h', 'H', '+', 'x', 'd', '|', '_'
+    ]
+    marker_dict = {
+        key: markers[i % len(markers)]
+        for i, key in enumerate(feats_dict.keys())
+    }
+    for key, tsne_feats in tsne_feats_dict.items():
         scores = scores_dict[key]
-        if key == excluded_id_key:
+        marker = marker_dict[key]
+        if key == 'id' and not colored_id:
             plt.scatter(tsne_feats[:, 0],
                         tsne_feats[:, 1],
                         s=10,
                         alpha=0.2,
-                        marker=markers[key],
-                        label=_get_label(key, datasets[key]),
+                        marker=marker,
+                        label=_get_label(key, datasets.get(key, None)),
                         c='grey')
         else:
             plt.scatter(tsne_feats[:, 0],
                         tsne_feats[:, 1],
                         s=10,
                         alpha=0.5,
-                        marker=markers[key],
-                        label=_get_label(key, datasets[key]),
+                        marker=marker,
+                        label=_get_label(key, datasets.get(key, None)),
                         c=scores,
                         cmap=cmap,
                         norm=norm)
+
     plt.colorbar(mappable=plt.cm.ScalarMappable(norm=norm, cmap=cmap),
                  ax=plt.gca())
     plt.axis('off')
@@ -398,65 +362,22 @@ def plot_tsne_score(datasets: dict,
     feat_dir = os.path.normpath(feat_dir)
     score_dir = os.path.normpath(score_dir)
     out_dir = os.path.normpath(out_dir)
-    id_feats, _, id_scores = _load_features(datasets['id'],
-                                            feat_dir,
-                                            score_dir,
-                                            n_samples=1000)
-    csid_feats, csid_scores = None, None
-    if 'csid' in datasets:
-        csid_feats, _, csid_scores = _load_features(datasets['csid'],
-                                                    feat_dir,
-                                                    score_dir,
-                                                    n_samples=1000)
-    nearood_feats, _, nearood_scores = _load_features(datasets['nearood'],
-                                                      feat_dir,
-                                                      score_dir,
-                                                      n_samples=1000)
-    farood_feats, _, farood_scores = _load_features(datasets['farood'],
-                                                    feat_dir,
-                                                    score_dir,
-                                                    n_samples=1000)
 
-    id_scores, id_feats = _remove_outliers(id_scores, id_feats, outlier_method,
-                                           outlier_sigma, keep_ratio_thresh)
-    if csid_scores is not None:
-        csid_scores, csid_feats = _remove_outliers(csid_scores, csid_feats,
-                                                   outlier_method,
-                                                   outlier_sigma,
-                                                   keep_ratio_thresh)
-    nearood_scores, nearood_feats = _remove_outliers(nearood_scores,
-                                                     nearood_feats,
-                                                     outlier_method,
-                                                     outlier_sigma,
-                                                     keep_ratio_thresh)
-    farood_scores, farood_feats = _remove_outliers(farood_scores, farood_feats,
-                                                   outlier_method,
-                                                   outlier_sigma,
-                                                   keep_ratio_thresh)
+    feats_dict = {}
+    scores_dict = {}
 
-    if normalize_feats:
-        feats_dict = {
-            'farood': normalize(farood_feats, norm='l2', axis=1),
-            'nearood': normalize(nearood_feats, norm='l2', axis=1),
-            'id': normalize(id_feats, norm='l2', axis=1),
-        }
-        if csid_feats is not None:
-            feats_dict['csid'] = normalize(csid_feats, norm='l2', axis=1)
-    else:
-        feats_dict = {
-            'farood': farood_feats,
-            'nearood': nearood_feats,
-            'id': id_feats
-        }
-        if csid_feats is not None:
-            feats_dict['csid'] = csid_feats
-    scores_dict = {
-        'farood': farood_scores,
-        'nearood': nearood_scores,
-        'id': id_scores
-    }
-    if csid_scores is not None:
-        scores_dict['csid'] = csid_scores
+    for split_name, dataset_list in datasets.items():
+        feats, _, scores = _load_features(dataset_list,
+                                          feat_dir,
+                                          score_dir,
+                                          n_samples=1000)
+        scores, feats = _remove_outliers(scores, feats, outlier_method,
+                                         outlier_sigma, keep_ratio_thresh)
+        if normalize_feats:
+            feats_dict[split_name] = normalize(feats, norm='l2', axis=1)
+        else:
+            feats_dict[split_name] = feats
+        scores_dict[split_name] = scores
 
     print('Plotting t-SNE for features', flush=True)
     if normalize_feats:
@@ -508,25 +429,41 @@ if __name__ == '__main__':
     parser.add_argument('--normalize_feats',
                         action='store_true',
                         help='Draw t-SNE plots with L2 normalized features')
-    parser.add_argument('--ood_scheme',
-                        default='ood',
-                        choices=['ood', 'fsood'],
-                        help='OOD scheme to visualize (ood, fsood)')
+    parser.add_argument('--splits',
+                        nargs='+',
+                        default=['nearood', 'farood'],
+                        help='splits to visualize')
+    parser.add_argument('--cut_value',
+                        type=int,
+                        default=None,
+                        help='cut value for scores when drawing spectrum plot')
+    parser.add_argument('--plots',
+                        nargs='+',
+                        choices=['spectrum', 'tsne', 'tsne_score'],
+                        default=['spectrum', 'tsne', 'tsne_score'],
+                        help='Specify which plots to draw: spectrum, tsne, '
+                        'tsne_score. Default is all.')
+
     opt, unknown_args = parser.parse_known_args()
     config = merge_configs(*[Config(path) for path in opt.config])
     # set random seed
     np.random.seed(opt.seed)
     # draw plots
     datasets = {
-        'farood': config.ood_dataset.farood.datasets,
-        'nearood': config.ood_dataset.nearood.datasets,
-        'id': [config.dataset.name]
+        'id': [config.dataset.name],
     }
-    if opt.ood_scheme == 'fsood':
-        datasets['csid'] = config.ood_dataset.csid.datasets
-    plot_spectrum(datasets, opt.score_dir, opt.out_dir, opt.outlier_method,
-                  opt.outlier_sigma, opt.outlier_thresh, opt.log_scale)
-    plot_tsne(datasets, opt.feat_dir, opt.out_dir, opt.normalize_feats)
-    plot_tsne_score(datasets, opt.feat_dir, opt.score_dir, opt.out_dir,
-                    opt.normalize_feats, opt.outlier_method, opt.outlier_sigma,
-                    opt.outlier_thresh, opt.log_scale)
+    for split in opt.splits:
+        if split in config.ood_dataset:
+            datasets[split] = config.ood_dataset[split].datasets
+        else:
+            print(f'Split {split} not found in ood_dataset')
+    if 'spectrum' in opt.plots:
+        plot_spectrum(datasets, opt.score_dir, opt.out_dir, opt.cut_value,
+                      opt.outlier_method, opt.outlier_sigma,
+                      opt.outlier_thresh, opt.log_scale)
+    if 'tsne' in opt.plots:
+        plot_tsne(datasets, opt.feat_dir, opt.out_dir, opt.normalize_feats)
+    if 'tsne_score' in opt.plots:
+        plot_tsne_score(datasets, opt.feat_dir, opt.score_dir, opt.out_dir,
+                        opt.normalize_feats, opt.outlier_method,
+                        opt.outlier_sigma, opt.outlier_thresh, opt.log_scale)

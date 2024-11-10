@@ -66,19 +66,21 @@ class OODEvaluator(BaseEvaluator):
                 id_conf = np.concatenate([id_conf, csid_conf])
                 id_gt = np.concatenate([id_gt, csid_gt])
 
-        # load nearood data and compute ood metrics
-        print(u'\u2500' * 70, flush=True)
-        self._eval_ood(net, [id_pred, id_conf, id_gt],
-                       ood_data_loaders,
-                       postprocessor,
-                       ood_split='nearood')
+        if 'splits' in self.config.evaluator and \
+           type(self.config.evaluator.splits) is list:
+            splits = self.config.evaluator.splits
+        else:
+            splits = ['nearood', 'farood']
 
-        # load farood data and compute ood metrics
-        print(u'\u2500' * 70, flush=True)
-        self._eval_ood(net, [id_pred, id_conf, id_gt],
-                       ood_data_loaders,
-                       postprocessor,
-                       ood_split='farood')
+        print(f'Evaluating splits: {splits}')
+
+        for split in splits:
+            # load 'split' data and compute ood metrics
+            print(u'\u2500' * 70, flush=True)
+            self._eval_ood(net, [id_pred, id_conf, id_gt],
+                           ood_data_loaders,
+                           postprocessor,
+                           ood_split=split)
 
     def _eval_ood(self,
                   net: nn.Module,
