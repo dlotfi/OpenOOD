@@ -174,10 +174,11 @@ def plot_spectrum(datasets: dict,
         scores = _load_scores(score_dir, dataset_list)
         if cut_value is not None:
             scores = scores[scores > cut_value]
-        scores = _remove_outliers(scores,
-                                  method=outlier_method,
-                                  sigma=outlier_sigma,
-                                  keep_ratio_threshold=keep_ratio_thresh)
+        else:
+            scores = _remove_outliers(scores,
+                                      method=outlier_method,
+                                      sigma=outlier_sigma,
+                                      keep_ratio_threshold=keep_ratio_thresh)
         scores_dict[split_name] = scores
 
     print('Plotting histogram of log-likelihood', flush=True)
