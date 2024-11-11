@@ -20,6 +20,11 @@ __all__ = ('scienceplots', )
 plt.style.use(['science', 'no-latex'])
 
 
+def _get_safe_matplotlib_str(s):
+    # Matplotlib replaces '_' with something like '˙'!
+    return s.replace('_', '-')
+
+
 def _get_label(split_name: str,
                datasets: List[str] = None,
                max_length: int = 75):
@@ -37,12 +42,12 @@ def _get_label(split_name: str,
         # split by '_' and capitalize each word
         label = ' '.join([word.capitalize() for word in split_name.split('_')])
     if datasets is not None:
-        dataset_names = ', '.join(datasets).replace('_', '-')
+        dataset_names = ', '.join(datasets)
         if len(dataset_names) + len(label) > max_length:
             dataset_names = dataset_names[:max_length - len(label)] + ' ...'
         label += f' ({dataset_names})'
 
-    return label
+    return _get_safe_matplotlib_str(label)
 
 
 def _remove_outlier_data(values, method='zscore', sigma=3.0):
@@ -200,6 +205,73 @@ def plot_spectrum(datasets: dict,
     plt.savefig(f'{out_dir}/spectrum{cut_value_str}.png', bbox_inches='tight')
 
 
+def plot_spectrum_pair(datasets: dict,
+                       score_dir: str,
+                       out_dir: str,
+                       id_splits: List[str],
+                       cut_value: float = None,
+                       outlier_method: str = None,
+                       outlier_sigma=3.0,
+                       keep_ratio_thresh=0.5,
+                       log_scale=False):
+    score_dir = os.path.normpath(score_dir)
+    out_dir = os.path.join(out_dir, 'pair_plots')
+    os.makedirs(out_dir, exist_ok=True)
+
+    id_splits_scores = {}
+    scores_dict = {}
+    for split_name, dataset_list in datasets.items():
+        if split_name in id_splits:
+            dataset_list = [dataset_list]
+        for dataset in dataset_list:
+            dataset = [dataset] if type(dataset) is not list else dataset
+            scores = _load_scores(score_dir, dataset)
+            if cut_value is not None:
+                scores = scores[scores > cut_value]
+            else:
+                scores = _remove_outliers(
+                    scores,
+                    method=outlier_method,
+                    sigma=outlier_sigma,
+                    keep_ratio_threshold=keep_ratio_thresh)
+            if split_name in id_splits:
+                id_splits_scores[split_name] = scores
+            else:
+                scores_dict.setdefault(split_name, {})[dataset[0]] = scores
+
+    # Plot spectrum for all pairs of 'id' and one of the other datasets
+    for split_name, datasets_scores in scores_dict.items():
+        print(f'Plotting histogram of log-likelihood for {split_name}',
+              flush=True)
+        n_bins = 500
+        plt.figure(figsize=(8, 3), dpi=300)
+        for key in id_splits:
+            id_scores = id_splits_scores[key]
+            plt.hist(id_scores,
+                     n_bins,
+                     density=True,
+                     weights=np.ones(len(id_scores)) / len(id_scores),
+                     alpha=0.5,
+                     label=_get_label(key, datasets[key]),
+                     log=log_scale)
+        for dataset_name, scores in datasets_scores.items():
+            plt.hist(scores,
+                     n_bins,
+                     density=True,
+                     weights=np.ones(len(scores)) / len(scores),
+                     alpha=0.5,
+                     label=_get_safe_matplotlib_str(dataset_name),
+                     log=log_scale)
+        plt.yticks([])
+        plt.legend(loc='upper left', fontsize='small')
+        plt.title(f'Log-Likelihood for ID and '
+                  f'{_get_safe_matplotlib_str(split_name)} Samples')
+        cut_value_str = f'_cut{cut_value}' if cut_value is not None else ''
+        plt.savefig(f'{out_dir}/spectrum_{split_name}{cut_value_str}.png',
+                    bbox_inches='tight')
+        plt.close()
+
+
 def _load_features(datasets: List[str],
                    feat_dir: str,
                    score_dir: str = None,
@@ -295,6 +367,68 @@ def plot_tsne(datasets: dict, feat_dir: str, out_dir: str,
         feats_flow_dict,
         't-SNE for Normalizing Flow Features of ID and OOD Samples',
         f'{out_dir}/tsne_features_flow.png', datasets)
+
+
+def plot_tsne_pair(datasets: dict, feat_dir: str, out_dir: str,
+                   id_splits: List[str], normalize_feats: bool):
+    feat_dir = os.path.normpath(feat_dir)
+    out_dir = os.path.join(out_dir, 'pair_plots')
+    os.makedirs(out_dir, exist_ok=True)
+
+    id_feats_dict = {}
+    # id_feats_flow_dict = {}
+    feats_dict = {}
+    # feats_flow_dict = {}
+
+    for split_name, dataset_list in datasets.items():
+        if split_name in id_splits:
+            dataset_list = [dataset_list]
+        for dataset in dataset_list:
+            dataset = [dataset] if type(dataset) is not list else dataset
+            feats, feats_flow = _load_features(dataset,
+                                               feat_dir,
+                                               n_samples=1000)
+            if normalize_feats:
+                feats = normalize(feats, norm='l2', axis=1)
+
+            if split_name in id_splits:
+                id_feats_dict[split_name] = feats
+                # id_feats_flow_dict[split_name] = feats_flow
+            else:
+                feats_dict.setdefault(split_name, {})[dataset[0]] = feats
+                # feats_flow_dict.setdefault(split_name, {})[dataset[0]] = \
+                #     feats_flow
+
+    # Plot t-SNE for all pairs of 'id' and one of the other datasets
+    for split_name, datasets_feats in feats_dict.items():
+        print(f'Plotting t-SNE for {split_name}', flush=True)
+        plt.figure(figsize=(8, 8), dpi=300)
+        tsne_feats_dict = _tsne_compute({
+            **{key: id_feats_dict[key]
+               for key in id_splits},
+            **{key: feats
+               for key, feats in datasets_feats.items()}
+        })
+        for key in id_splits:
+            tsne_feats = tsne_feats_dict[key]
+            plt.scatter(tsne_feats[:, 0],
+                        tsne_feats[:, 1],
+                        s=10,
+                        alpha=0.5,
+                        label=_get_label(key, datasets.get(key, None)))
+        for dataset_name in datasets_feats.keys():
+            tsne_feats = tsne_feats_dict[dataset_name]
+            plt.scatter(tsne_feats[:, 0],
+                        tsne_feats[:, 1],
+                        s=10,
+                        alpha=0.5,
+                        label=_get_safe_matplotlib_str(dataset_name))
+        plt.axis('off')
+        plt.legend(loc='upper left', fontsize='small')
+        plt.title(f't-SNE for ID and '
+                  f'{_get_safe_matplotlib_str(split_name)} Samples')
+        plt.savefig(f'{out_dir}/tsne_{split_name}.png', bbox_inches='tight')
+        plt.close()
 
 
 def _draw_tsne_score_plot(feats_dict, scores_dict, title, output_path,
@@ -395,6 +529,117 @@ def plot_tsne_score(datasets: dict,
             datasets)
 
 
+def plot_tsne_score_pair(datasets: dict,
+                         feat_dir: str,
+                         score_dir: str,
+                         out_dir: str,
+                         id_splits: List[str],
+                         normalize_feats: bool,
+                         outlier_method: str = None,
+                         outlier_sigma=3.0,
+                         keep_ratio_thresh=0.5,
+                         log_scale=False,
+                         colored_id=False):
+    feat_dir = os.path.normpath(feat_dir)
+    score_dir = os.path.normpath(score_dir)
+    out_dir = os.path.join(out_dir, 'pair_plots')
+    os.makedirs(out_dir, exist_ok=True)
+
+    id_feats_dict = {}
+    id_scores_dict = {}
+    feats_dict = {}
+    scores_dict = {}
+
+    for split_name, dataset_list in datasets.items():
+        if split_name in id_splits:
+            dataset_list = [dataset_list]
+        for dataset in dataset_list:
+            dataset = [dataset] if type(dataset) is not list else dataset
+            feats, _, scores = _load_features(dataset,
+                                              feat_dir,
+                                              score_dir,
+                                              n_samples=1000)
+            scores, feats = _remove_outliers(scores, feats, outlier_method,
+                                             outlier_sigma, keep_ratio_thresh)
+            if normalize_feats:
+                feats = normalize(feats, norm='l2', axis=1)
+
+            if split_name in id_splits:
+                id_feats_dict[split_name] = feats
+                id_scores_dict[split_name] = scores
+            else:
+                feats_dict.setdefault(split_name, {})[dataset[0]] = feats
+                scores_dict.setdefault(split_name, {})[dataset[0]] = scores
+
+    # Plot t-SNE scores for all pairs of 'id' and one of the other datasets
+    for split_name, datasets_feats in feats_dict.items():
+        print(f'Plotting t-SNE scores for {split_name}', flush=True)
+        plt.figure(figsize=(10, 8), dpi=300)
+        tsne_feats_dict = _tsne_compute({
+            **{key: id_feats_dict[key]
+               for key in id_splits},
+            **{key: feats
+               for key, feats in datasets_feats.items()}
+        })
+        all_scores = np.concatenate([id_scores_dict[key]
+                                     for key in id_splits] +
+                                    list(scores_dict[split_name].values()))
+        cmap = plt.cm.rainbow
+        if log_scale:
+            min_score = all_scores.min()
+            if min_score <= 0:
+                all_scores = all_scores + abs(min_score) + 1
+            norm = mcolors.LogNorm(vmin=all_scores.min(),
+                                   vmax=all_scores.max())
+        else:
+            norm = mcolors.Normalize(vmin=all_scores.min(),
+                                     vmax=all_scores.max())
+        markers = [
+            'o', 's', '^', 'D', 'v', 'p', '*', 'h', 'H', '+', 'x', 'd', '|',
+            '_'
+        ]
+        marker_dict = {
+            key: markers[i % len(markers)]
+            for i, key in enumerate(tsne_feats_dict.keys())
+        }
+        for key in id_splits:
+            tsne_feats = tsne_feats_dict[key]
+            # id_scores = id_scores_dict[key]
+            marker = marker_dict[key]
+            plt.scatter(tsne_feats[:, 0],
+                        tsne_feats[:, 1],
+                        s=10,
+                        alpha=0.2,
+                        marker=marker,
+                        label=_get_label(key, datasets.get(key, None)),
+                        c='grey')
+        for dataset_name in datasets_feats.keys():
+            tsne_feats = tsne_feats_dict[dataset_name]
+            scores = scores_dict[split_name][dataset_name]
+            marker = marker_dict[dataset_name]
+            plt.scatter(tsne_feats[:, 0],
+                        tsne_feats[:, 1],
+                        s=10,
+                        alpha=0.5,
+                        marker=marker,
+                        label=_get_safe_matplotlib_str(dataset_name),
+                        c=scores,
+                        cmap=cmap,
+                        norm=norm)
+
+        plt.colorbar(mappable=plt.cm.ScalarMappable(norm=norm, cmap=cmap),
+                     ax=plt.gca())
+        plt.axis('off')
+        legend = plt.legend(loc='upper left', fontsize='small')
+        for handle in legend.legend_handles:
+            handle.set_color('black')
+        plt.title(f't-SNE Scores for ID and '
+                  f'{_get_safe_matplotlib_str(split_name)} Samples')
+        plt.savefig(f'{out_dir}/tsne_scores_{split_name}.png',
+                    bbox_inches='tight')
+        plt.close()
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--config', dest='config', nargs='+', required=True)
@@ -430,10 +675,14 @@ if __name__ == '__main__':
     parser.add_argument('--normalize_feats',
                         action='store_true',
                         help='Draw t-SNE plots with L2 normalized features')
-    parser.add_argument('--splits',
+    parser.add_argument('--ood_splits',
                         nargs='+',
                         default=['nearood', 'farood'],
-                        help='splits to visualize')
+                        help='OOD splits to visualize')
+    parser.add_argument('--csid_split',
+                        type=str,
+                        default=None,
+                        help='split name of the covariate-shift ID')
     parser.add_argument('--cut_value',
                         type=int,
                         default=None,
@@ -444,6 +693,9 @@ if __name__ == '__main__':
                         default=['spectrum', 'tsne', 'tsne_score'],
                         help='Specify which plots to draw: spectrum, tsne, '
                         'tsne_score. Default is all.')
+    parser.add_argument('--pair_plots',
+                        action='store_true',
+                        help='Draw plots for each pair of ID and OOD split')
 
     opt, unknown_args = parser.parse_known_args()
     config = merge_configs(*[Config(path) for path in opt.config])
@@ -453,18 +705,34 @@ if __name__ == '__main__':
     datasets = {
         'id': [config.dataset.name],
     }
-    for split in opt.splits:
-        if split in config.ood_dataset:
+    for split in opt.ood_splits + [opt.csid_split]:
+        if split is None:  # just to skip the csid_split if it is None
+            continue
+        elif split in config.ood_dataset:
             datasets[split] = config.ood_dataset[split].datasets
         else:
             print(f'Split {split} not found in ood_dataset')
+    id_splits = ['id'] + ([opt.csid_split] if opt.csid_split else [])
     if 'spectrum' in opt.plots:
         plot_spectrum(datasets, opt.score_dir, opt.out_dir, opt.cut_value,
                       opt.outlier_method, opt.outlier_sigma,
                       opt.outlier_thresh, opt.log_scale)
+        if opt.pair_plots:
+            plot_spectrum_pair(datasets, opt.score_dir, opt.out_dir, id_splits,
+                               opt.cut_value, opt.outlier_method,
+                               opt.outlier_sigma, opt.outlier_thresh,
+                               opt.log_scale)
     if 'tsne' in opt.plots:
         plot_tsne(datasets, opt.feat_dir, opt.out_dir, opt.normalize_feats)
+        if opt.pair_plots:
+            plot_tsne_pair(datasets, opt.feat_dir, opt.out_dir, id_splits,
+                           opt.normalize_feats)
     if 'tsne_score' in opt.plots:
         plot_tsne_score(datasets, opt.feat_dir, opt.score_dir, opt.out_dir,
                         opt.normalize_feats, opt.outlier_method,
                         opt.outlier_sigma, opt.outlier_thresh, opt.log_scale)
+        if opt.pair_plots:
+            plot_tsne_score_pair(datasets, opt.feat_dir, opt.score_dir,
+                                 opt.out_dir, id_splits, opt.normalize_feats,
+                                 opt.outlier_method, opt.outlier_sigma,
+                                 opt.outlier_thresh, opt.log_scale)

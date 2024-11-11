@@ -11,17 +11,22 @@ ood_dataset:
   batch_size: 16
   shuffle: False
 
-  split_names: [val, nearood, farood, csid]
+  split_names: [val, csid, transformation_shift, population_shift,
+                modality_shift, diagnostic_shift, organ_shift]
   val:
     data_dir: ./data/medood/
     imglist_pth: ./data/benchmark_imglist/medood/val_brats20_t1c.txt
-  nearood:
+  csid:
+    datasets: [ lumiere_t1 ]
+    lumiere_t1:
+      data_dir: ./data/medood/
+      imglist_pth: ./data/benchmark_imglist/medood/test_lumiere_t1.txt
+  transformation_shift:
     datasets: [brats20_t1_transformed_motion, brats20_t1_transformed_ghost,
                brats20_t1_transformed_bias, brats20_t1_transformed_spike,
                brats20_t1_transformed_noise, brats20_t1_transformed_downsampling,
                brats20_t1_transformed_scaling, brats20_t1_transformed_gamma,
-               brats20_t1_transformed_truncation, brats20_t1_transformed_registration,
-               brats23_ped_t1, brats23_ssa_t1]
+               brats20_t1_transformed_truncation, brats20_t1_transformed_registration]
     brats20_t1_transformed_motion:
       data_dir: ./data/medood/
       imglist_pth: ./data/benchmark_imglist/medood/test_brats20_t1_transformed_motion.txt
@@ -52,14 +57,16 @@ ood_dataset:
     brats20_t1_transformed_registration:
       data_dir: ./data/medood/
       imglist_pth: ./data/benchmark_imglist/medood/test_brats20_t1_transformed_registration.txt
+  population_shift:
+    datasets: [ brats23_ped_t1, brats23_ssa_t1 ]
     brats23_ped_t1:
       data_dir: ./data/medood/
       imglist_pth: ./data/benchmark_imglist/medood/test_brats23_ped_t1.txt
     brats23_ssa_t1:
       data_dir: ./data/medood/
       imglist_pth: ./data/benchmark_imglist/medood/test_brats23_ssa_t1.txt
-  farood:
-    datasets: [brats20_t1c, brats20_t2f, cq500_ct, ixi_t1, wmh2017_t1, episurg_t1, atlas2_t1, chaos_t1, lumbar_t1]
+  modality_shift:
+    datasets: [brats20_t1c, brats20_t2f, cq500_ct]
     brats20_t1c:
       data_dir: ./data/medood/
       imglist_pth: ./data/benchmark_imglist/medood/test_brats20_t1c.txt
@@ -69,6 +76,8 @@ ood_dataset:
     cq500_ct:
       data_dir: ./data/medood/
       imglist_pth: ./data/benchmark_imglist/medood/test_cq500_ct.txt
+  diagnostic_shift:
+    datasets: [ixi_t1, wmh2017_t1, episurg_t1, atlas2_t1]
     ixi_t1:
       data_dir: ./data/medood/
       imglist_pth: ./data/benchmark_imglist/medood/test_ixi_t1.txt
@@ -81,14 +90,11 @@ ood_dataset:
     atlas2_t1:
       data_dir: ./data/medood/
       imglist_pth: ./data/benchmark_imglist/medood/test_atlas2_t1.txt
+  organ_shift:
+    datasets: [chaos_t1, lumbar_t1]
     chaos_t1:
       data_dir: ./data/medood/
       imglist_pth: ./data/benchmark_imglist/medood/test_chaos_t1.txt
     lumbar_t1:
       data_dir: ./data/medood/
       imglist_pth: ./data/benchmark_imglist/medood/test_lumbar_t1.txt
-  csid:
-    datasets: [lumiere_t1]
-    lumiere_t1:
-      data_dir: ./data/medood/
-      imglist_pth: ./data/benchmark_imglist/medood/test_lumiere_t1.txt
