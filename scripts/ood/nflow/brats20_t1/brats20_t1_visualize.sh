@@ -19,17 +19,15 @@ python main.py \
     --seed ${SEED}
 
 # draw plots
-python visualize.py \
+python main.py \
     --config configs/datasets/medood/brats20_t1.yml \
     configs/datasets/medood/brats20_t1_fsood.yml \
-    --score_dir "./results/brats20_t1_nflow_test_ood_ood_nflow_default/s${SEED}/fsood/scores" \
-    --feat_dir "./results/brats20_t1_nflow_feat_extract_nflow_default" \
-    --out_dir "./results/brats20_t1_nflow_test_ood_ood_nflow_default/s${SEED}/fsood" \
-    --normalize_feats \
-    --ood_splits transformation_shift population_shift modality_shift diagnostic_shift organ_shift \
-    --csid_split csid \
-    --pair_plots \
-    --outlier_method auto \
+    configs/pipelines/test/visualize_nflow_ood.yml \
+    --visualizer.ood_scheme fsood \
+    --visualizer.score_dir "./results/brats20_t1_nflow_test_ood_ood_nflow_default/s${SEED}/fsood/scores" \
+    --visualizer.feat_dir "./results/brats20_t1_nflow_feat_extract_nflow_default" \
+    --visualizer.ood_splits transformation_shift population_shift modality_shift diagnostic_shift organ_shift \
+    --visualizer.spectrum.types aggregate split \
+    --visualizer.tsne_nflow.types aggregate split \
+    --visualizer.tsne_score.types aggregate split \
     --seed ${SEED}
-#    --cut_value -1500 \
-#    --plots spectrum \

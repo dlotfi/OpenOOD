@@ -1,0 +1,46 @@
+exp_name: "'@{dataset.name}'_'@{pipeline.name}'_'@{mark}'/s'@{seed}'/'@{visualizer.ood_scheme}'"
+output_dir: ./results/
+save_output: True
+merge_option: default # disabled if 'save_output' is False choices: [default, pass, merge]
+mark: default # to mark the version of experiment
+seed: 0
+
+num_gpus: 0
+num_workers: 0
+num_machines: 1
+machine_rank: 0
+
+pipeline:
+  name: visualize_ood
+
+visualizer:
+  score_dir: ./results/cifar10_nflow_test_ood_ood_nflow_default/s0/ood/scores
+  feat_dir: ./results/cifar10_nflow_feat_extract_nflow_default
+  ood_splits: [nearood, farood]
+  csid_split: csid
+  ood_scheme: ood
+
+  plots: [spectrum, tsne_nflow, tsne_score]
+  spectrum:
+    types: [aggregate]  # how to plot OODs against ID (and CS-ID) choices: [aggregate, split]
+    n_bins: 500 # number of bins for the histogram
+    score_log_scale: False  # log-scale the score values in the plot
+    score_outlier_removal:
+      method: auto  # choices: [auto, zscore, iqr, mad, range]
+      keep_range: none  # range to keep the scores. only used when method is 'range'
+      sigma: 3
+      keep_ratio_threshold: 0.5
+  tsne_nflow:
+    types: [aggregate]
+    normalize_feats: True  # l2-normalize features before t-SNE
+    n_samples: 1000
+  tsne_score:
+    types: [aggregate]
+    normalize_feats: True
+    score_log_scale: False
+    n_samples: 1000
+    score_outlier_removal:
+      method: auto
+      keep_range: none
+      sigma: 3
+      keep_ratio_threshold: 0.5
