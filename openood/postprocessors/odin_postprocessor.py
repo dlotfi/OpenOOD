@@ -42,9 +42,8 @@ class ODINPostprocessor(BasePostprocessor):
         gradient = (gradient.float() - 0.5) * 2
 
         # Scaling values taken from original code
-        gradient[:, 0] = (gradient[:, 0]) / self.input_std[0]
-        gradient[:, 1] = (gradient[:, 1]) / self.input_std[1]
-        gradient[:, 2] = (gradient[:, 2]) / self.input_std[2]
+        for dim, dim_std in enumerate(self.input_std):
+            gradient[:, dim] = gradient[:, dim] / dim_std
 
         # Adding small perturbations to images
         tempInputs = torch.add(data.detach(), gradient, alpha=-self.noise)

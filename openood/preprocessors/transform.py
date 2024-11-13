@@ -9,6 +9,7 @@ normalization_dict = {
     'aircraft': [[0.5, 0.5, 0.5], [0.5, 0.5, 0.5]],
     'cub': [[0.5, 0.5, 0.5], [0.5, 0.5, 0.5]],
     'cars': [[0.5, 0.5, 0.5], [0.5, 0.5, 0.5]],
+    'brats20_t1': [[0.0], [1.0]]  # z-score normalization in preprocessing
 }
 
 interpolation_modes = {

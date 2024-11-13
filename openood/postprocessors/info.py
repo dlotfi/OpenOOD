@@ -4,4 +4,5 @@ num_classes_dict = {
     'imagenet200': 200,
     'imagenet': 1000,
     'organamnist': 11,
+    'brats20_t1': 2,
 }
