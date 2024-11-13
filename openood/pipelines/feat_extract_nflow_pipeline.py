@@ -65,7 +65,7 @@ class FeatExtractNormalizingFlowPipeline:
                 print(f'\t CSID {dataset_name} data...')
                 evaluator.extract(full_net.backbone, csid_dl, dataset_name)
                 evaluator.extract(full_net, csid_dl, f'{dataset_name}_flow')
-        split_types = ['nearood', 'farood']
+        split_types = ood_loader_dict.keys() - {'csid', 'val'}
         for ood_split in split_types:
             for dataset_name, ood_dl in ood_loader_dict[ood_split].items():
                 print(f'\t {ood_split.upper()} {dataset_name} data...')

@@ -19,6 +19,7 @@ pipeline:
 evaluator:
   name: ood
   ood_scheme: ood
+  ood_splits: [nearood, farood]
 
 recorder:
   save_scores: True
