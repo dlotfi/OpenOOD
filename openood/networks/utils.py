@@ -378,7 +378,9 @@ def get_network(network_config):
     elif network_config.name == 'feat_concat':
         from .feat_concat import FeatureConcatNetwork
         encoder = get_network(network_config.encoder)
-        net = FeatureConcatNetwork(encoder, network_config.feat_agg.layers)
+        n_spatial_dims = network_config.n_spatial_dims or 2
+        net = FeatureConcatNetwork(encoder, network_config.feat_agg.layers,
+                                   n_spatial_dims)
     elif network_config.name == 'nflow_featagg':
         from .nflow import get_normalizing_flow
         from .feat_agg import get_feature_aggregator

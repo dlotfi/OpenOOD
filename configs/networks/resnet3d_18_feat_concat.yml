@@ -1,0 +1,22 @@
+network:
+  name: feat_concat
+  num_classes: '@{dataset.num_classes}'
+  image_size: '@{dataset.image_size}'
+  pretrained: False
+  checkpoint: none           # ignore if pretrained is false
+  num_gpus: '@{num_gpus}'
+  n_spatial_dims: 3
+
+  # feature aggregation network
+  feat_agg:
+    layers: [1, 2, 3, 4, 5]
+
+  # network used for feature extraction
+  encoder:
+    name: resnet3d_18
+    num_classes: '@{dataset.num_classes}'
+    num_channels: '@{dataset.num_channels}'
+    image_size: '@{dataset.image_size}'
+    pretrained: False  # set 'True' to load pretrained model
+    checkpoint: none   # ignore if pretrained is false
+    num_gpus: '@{num_gpus}'

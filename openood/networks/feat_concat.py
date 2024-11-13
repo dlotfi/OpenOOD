@@ -1,13 +1,18 @@
 import torch
 from torch import nn
-from torch.nn.functional import adaptive_avg_pool2d
 
 
 class FeatureConcatNetwork(nn.Module):
-    def __init__(self, encoder, layers):
+    def __init__(self, encoder, layers, n_spatial_dims=2):
         super(FeatureConcatNetwork, self).__init__()
         self.encoder = encoder
-        self.layers = layers
+        self.layers = [int(la) for la in layers]
+        if n_spatial_dims == 2:
+            self.avg_pool = nn.AdaptiveAvgPool2d((1, 1))
+        elif n_spatial_dims == 3:
+            self.avg_pool = nn.AdaptiveAvgPool3d((1, 1, 1))
+        else:
+            raise ValueError(f'Unsupported n_spatial_dims: {n_spatial_dims}')
 
     def forward(self, x, return_feature=False):
         if not return_feature:
@@ -16,9 +21,7 @@ class FeatureConcatNetwork(nn.Module):
         features_to_aggregate = [
             f for i, f in enumerate(features_list) if (i + 1) in self.layers
         ]
-        concatenated_features = torch.cat([
-            adaptive_avg_pool2d(f, (1, 1)).flatten(1)
-            for f in features_to_aggregate
-        ],
-                                          dim=1)
+        concatenated_features = torch.cat(
+            [self.avg_pool(f).flatten(1) for f in features_to_aggregate],
+            dim=1)
         return logits_cls, concatenated_features
