@@ -7,13 +7,24 @@ class Med3DPreprocessor(mt.Compose):
     def __init__(self, config: Config):
         self.pre_size = config.dataset.pre_size
         self.image_size = config.dataset.image_size
+        # All brain images in this collection of datasets are registered to
+        # the SRI24 atlas, resampled to an isotropic resolution of 1mm³,
+        # brain-extracted, and normalized (percentile clip to 0.1 - 99.9)
+        # For non-brain images, the preprocessing includes resampling to
+        # 1mm³, center cropping to 240x240x155, and normalization (same as
+        # brain images)
         if config.dataset.processing_type == 'medood':
-            # All brain images in this collection of datasets are registered to
-            # the SRI24 atlas, resampled to an isotropic resolution of 1mm³,
-            # brain-extracted, and normalized (percentile clip to 0.1 - 99.9)
-            # For non-brain images, the preprocessing includes resampling to
-            # 1mm³, center cropping to 240x240x155, and normalization (same as
-            # brain images)
+            transforms = [
+                mt.EnsureChannelFirst(),
+                # Reorient to RAS (Right-Anterior-Superior) orientation
+                mt.Orientation(axcodes='RAS'),
+                # Apply z-score normalization (mean 0, std 1)
+                mt.NormalizeIntensity(nonzero=True, channel_wise=True),
+                mt.Resize(spatial_size=tuple(self.pre_size)),
+                mt.RandSpatialCrop(roi_size=tuple(self.image_size),
+                                   random_size=False),
+            ]
+        elif config.dataset.processing_type == 'medood-strong':
             transforms = [
                 mt.EnsureChannelFirst(),
                 # Reorient to RAS (Right-Anterior-Superior) orientation
@@ -50,7 +61,7 @@ class Med3DTestPreprocessor(mt.Compose):
     def __init__(self, config: Config):
         self.pre_size = config.dataset.pre_size
         self.image_size = config.dataset.image_size
-        if config.dataset.processing_type == 'medood':
+        if config.dataset.processing_type.startswith('medood'):
             transforms = [
                 mt.EnsureChannelFirst(),
                 # Reorient to RAS (Right-Anterior-Superior) orientation

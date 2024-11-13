@@ -66,15 +66,15 @@ class OODEvaluator(BaseEvaluator):
                 id_conf = np.concatenate([id_conf, csid_conf])
                 id_gt = np.concatenate([id_gt, csid_gt])
 
-        if 'splits' in self.config.evaluator and \
-           type(self.config.evaluator.splits) is list:
-            splits = self.config.evaluator.splits
+        if 'ood_splits' in self.config.evaluator and \
+           type(self.config.evaluator.ood_splits) is list:
+            ood_splits = self.config.evaluator.ood_splits
         else:
-            splits = ['nearood', 'farood']
+            ood_splits = ['nearood', 'farood']
 
-        print(f'Evaluating splits: {splits}')
+        print(f'Evaluating splits: {ood_splits}')
 
-        for split in splits:
+        for split in ood_splits:
             # load 'split' data and compute ood metrics
             print(u'\u2500' * 70, flush=True)
             self._eval_ood(net, [id_pred, id_conf, id_gt],

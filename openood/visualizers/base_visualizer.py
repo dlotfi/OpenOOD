@@ -13,20 +13,17 @@ class BaseVisualizer(ABC):
     def __init__(self, config: Config, plot_config: Config):
         self.config = config
         self.plot_config = plot_config
+        csid_split = ['csid'] \
+            if self.config.visualizer.ood_scheme == 'fsood' else []
+        self.id_splits = ['id'] + csid_split
         self.datasets = {
             'id': [self.config.dataset.name],
         }
-        for split in ([self.config.visualizer.csid_split] +
-                      self.config.visualizer.ood_splits):
-            if split is None:  # just to skip the csid_split if it is None
-                continue
-            elif split in self.config.ood_dataset:
+        for split in csid_split + self.config.visualizer.ood_splits:
+            if split in self.config.ood_dataset:
                 self.datasets[split] = self.config.ood_dataset[split].datasets
             else:
                 print(f'Split {split} not found in ood_dataset')
-        self.id_splits = ['id']
-        if self.config.visualizer.csid_split:
-            self.id_splits += [self.config.visualizer.csid_split]
 
     def get_label(self, split_name: str, max_length: int = 75):
         labels = {

@@ -1,5 +1,5 @@
 #!/bin/bash
-# sh scripts/ood/nflow/brats20_t1/brats20_t1_test_fsood_nflow.sh
+# sh scripts/ood/nflow/brats20_t1/brats20_t1_test_ood_nflow.sh
 
 SEED=0
 python main.py \
@@ -10,7 +10,7 @@ python main.py \
     configs/preprocessors/med3d_preprocessor.yml \
     configs/postprocessors/nflow.yml \
     --num_workers 8 \
-    --evaluator.ood_scheme fsood \
+    --evaluator.ood_scheme ood \
     --evaluator.ood_splits transformation_shift population_shift modality_shift diagnostic_shift organ_shift \
     --network.pretrained True \
     --network.checkpoint "./results/brats20_t1_nflow_nflow_e100_lr0.0001_default/s${SEED}/best_nflow.ckpt" None \

@@ -14,10 +14,9 @@ pipeline:
   name: visualize_ood
 
 visualizer:
-  score_dir: ./results/cifar10_test_ood__default/s0/ood/scores
+  score_dir: ./results/cifar10_test_ood_default/s0/ood/scores
   feat_dir: ./results/cifar10_feat_extract_default
   ood_splits: [nearood, farood]
-  csid_split: csid
   ood_scheme: ood
 
   plots: [spectrum, tsne, tsne_score]

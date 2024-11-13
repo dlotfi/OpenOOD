@@ -17,7 +17,6 @@ visualizer:
   score_dir: ./results/cifar10_nflow_test_ood_ood_nflow_default/s0/ood/scores
   feat_dir: ./results/cifar10_nflow_feat_extract_nflow_default
   ood_splits: [nearood, farood]
-  csid_split: csid
   ood_scheme: ood
 
   plots: [spectrum, tsne_nflow, tsne_score]
