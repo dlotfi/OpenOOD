@@ -4,15 +4,25 @@ from normflows.flows import Flow
 
 
 class ClampedMLP(nf.nets.MLP):
-    def __init__(self, clamp_value=None, **kwargs):
+    def __init__(self, clamp: float, method: str = 'HARD', **kwargs):
         super().__init__(**kwargs)
-        self.clamp_value = clamp_value
+        self.clamp = clamp
+        clamp_activations = {
+            'HARD': lambda u: torch.clamp(u, min=-clamp, max=clamp),
+            'TANH': lambda u: clamp * torch.tanh(u / clamp),
+            'SIGMOID': lambda u: clamp * 2. * (torch.sigmoid(u / clamp) - 0.5),
+            'ATAN': lambda u: clamp * 0.636 * torch.atan(u / clamp)
+        }
+        if not method or not clamp:
+            self.clamp_fn = lambda u: u
+        elif method in clamp_activations:
+            self.clamp_fn = clamp_activations[method]
+        else:
+            raise ValueError(f'Unknown clamp method: {method}')
 
     def forward(self, x):
         x = super().forward(x)
-        if self.clamp_value is None:
-            return x
-        x = torch.clamp(x, min=-self.clamp_value, max=self.clamp_value)
+        x = self.clamp_fn(x)
         return x
 
 
@@ -36,17 +46,22 @@ def get_normalizing_flow(network_config):
     normalize_input = network_config.normalize_input
     latent_size = network_config.latent_size
     hidden_size = network_config.hidden_size
-    if hidden_size is None:
-        hidden_size = latent_size * 2
-    n_flows = network_config.n_flows
     clamp_value = network_config.clamp_value
+    clamp_method = network_config.clamp_method
+    clamp_t = network_config.clamp_t
+    n_flows = network_config.n_flows
+
     b = torch.Tensor([1 if i % 2 == 0 else 0 for i in range(latent_size)])
     flows = []
     for i in range(n_flows):
-        s = ClampedMLP(clamp_value=clamp_value,
+        s = ClampedMLP(clamp=clamp_value,
+                       method=clamp_method,
                        layers=[latent_size, hidden_size, latent_size],
                        init_zeros=True)
-        t = ClampedMLP(clamp_value=clamp_value,
+        t = nf.nets.MLP(layers=[latent_size, hidden_size, latent_size],
+                        init_zeros=True) if not clamp_t else \
+            ClampedMLP(clamp=clamp_value,
+                       method=clamp_method,
                        layers=[latent_size, hidden_size, latent_size],
                        init_zeros=True)
         if i % 2 == 0:
