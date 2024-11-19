@@ -34,3 +34,4 @@ optimizer:
 recorder:
   name: nflow
   save_all_models: False
+  save_last_model: False

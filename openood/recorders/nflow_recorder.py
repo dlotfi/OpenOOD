@@ -47,6 +47,9 @@ class NormalizingFlowRecorder(BaseRecorder):
         if self.config.recorder.save_all_models:
             self._save_subnet(nflow, 'nflow', epoch_idx)
             self._save_subnet(feat_agg, 'feat_agg', epoch_idx)
+        elif self.config.recorder.save_last_model:
+            self._save_subnet(nflow, 'nflow', 'last')
+            self._save_subnet(feat_agg, 'feat_agg', 'last')
 
         if val_metrics['auroc'] >= self.best_val_auroc:
             self.best_epoch_idx = epoch_idx
