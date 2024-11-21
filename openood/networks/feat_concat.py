@@ -6,7 +6,7 @@ class FeatureConcatNetwork(nn.Module):
     def __init__(self, encoder, layers, n_spatial_dims=2):
         super(FeatureConcatNetwork, self).__init__()
         self.encoder = encoder
-        self.layers = [int(la) for la in layers]
+        self.layers = list(map(int, layers))
         if n_spatial_dims == 2:
             self.avg_pool = nn.AdaptiveAvgPool2d((1, 1))
         elif n_spatial_dims == 3:

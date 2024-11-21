@@ -375,6 +375,11 @@ def get_network(network_config):
         backbone = get_network(network_config.backbone)
         nflow_net = get_normalizing_flow(network_config.nflow)
         net = {'nflow': nflow_net, 'backbone': backbone}
+    elif network_config.name == 'nflow_multiscale':
+        from .nflow_multiscale import get_multiscale_normalizing_flow
+        backbone = get_network(network_config.backbone)
+        nflow_net = get_multiscale_normalizing_flow(network_config.nflow)
+        net = {'nflow': nflow_net, 'backbone': backbone}
     elif network_config.name == 'feat_concat':
         from .feat_concat import FeatureConcatNetwork
         encoder = get_network(network_config.encoder)

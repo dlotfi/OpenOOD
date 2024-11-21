@@ -64,7 +64,7 @@ conda create -n mood python==3.10.14
 #### Install requirements
 ```sh
 conda activate mood
-pip install Cython>=0.29.30
+pip install "Cython>=0.29.30" "numpy>=1.26.4"
 pip install -r requirements.txt
 ```
 
