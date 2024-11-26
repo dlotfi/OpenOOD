@@ -35,8 +35,7 @@ class MultiScaleNormalizingFlow(nn.Module):
     def log_prob(self, x):
         log_probs = self._apply_to_scales(
             x, lambda flow, feats: flow.log_prob(feats))
-        log_probs = torch.vstack(log_probs)
-        return torch.mean(log_probs, dim=0)
+        return torch.mean(torch.stack(log_probs), dim=0)
 
 
 def get_multiscale_normalizing_flow(network_config):
