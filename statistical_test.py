@@ -95,21 +95,20 @@ class FastDelongsTest(StatisticalTestBase):
         return aucs, delongcov
 
     @staticmethod
-    def calc_p_value(aucs, sigma):
-        """Computes p-value.
+    def calc_log10_p_value(aucs, sigma):
+        """Computes log10 of p-value.
 
         Args:
            aucs: 1D array of AUCs
            sigma: AUC DeLong covariances
         Returns:
-           p-value
+           log10(p-value)
         """
         dl = np.array([[1, -1]])
-        z = np.abs(np.diff(aucs)) / np.sqrt(np.dot(np.dot(dl, sigma), dl.T))
-        log_p_value = np.log(2) + norm.logsf(z, loc=0, scale=1)
-        p_value = np.exp(log_p_value).item()
-        # p_value = 2 * (1 - norm.cdf(np.abs(z))).item()
-        return p_value
+        z = np.diff(aucs) / np.sqrt(np.dot(np.dot(dl, sigma), dl.T))
+        log10_p_value = np.log10(2) + \
+            norm.logsf(np.abs(z), loc=0, scale=1) / np.log(10)
+        return log10_p_value.item()
 
     @staticmethod
     def compute_ground_truth_statistics(ground_truth):
@@ -130,11 +129,13 @@ class FastDelongsTest(StatisticalTestBase):
             (model1_scores, model2_scores))[:, order]
         aucs, delong_cov = self.fastDeLong(predictions_sorted_transposed,
                                            label_1_count)
-        p_value = self.calc_p_value(aucs, delong_cov)
+        log10_p_value = self.calc_log10_p_value(aucs, delong_cov)
+        p_value = 10**log10_p_value
 
         return {
             'AUC Model 1': auc_model1,
             'AUC Model 2': auc_model2,
+            'log10(P-Value)': log10_p_value,
             'P-Value': p_value
         }
 
@@ -224,9 +225,17 @@ class SimpleDelongsTest(StatisticalTestBase):
         z = (auc1 - auc2) / np.sqrt(var_diff)
 
         # Compute p-value
-        p_value = 2 * (1 - norm.cdf(np.abs(z)))
+        log10_p_value = np.log10(2) + \
+            norm.logsf(np.abs(z), loc=0, scale=1) / np.log(10)
+        p_value = 10**log10_p_value.item()
+        # p_value = 2 * (1 - norm.cdf(np.abs(z)))
 
-        return {'AUC Model 1': auc1, 'AUC Model 2': auc2, 'P-Value': p_value}
+        return {
+            'AUC Model 1': auc1,
+            'AUC Model 2': auc2,
+            'log10(P-Value)': log10_p_value.item(),
+            'P-Value': p_value
+        }
 
 
 def _load_scores(score_dir, filenames):
