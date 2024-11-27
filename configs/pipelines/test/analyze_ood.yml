@@ -1,0 +1,29 @@
+exp_name: "'@{dataset.name}'_'@{pipeline.name}'_'@{mark}'/s'@{seed}'/'@{analyzer.ood_scheme}'"
+output_dir: ./results/
+save_output: True
+merge_option: default # disabled if 'save_output' is False choices: [default, pass, merge]
+mark: default # to mark the version of experiment
+seed: 0
+
+num_gpus: 0
+num_workers: 0
+num_machines: 1
+machine_rank: 0
+
+pipeline:
+  name: analyze_ood
+
+analyzer:
+  model1_score_dir: ./results/organamnist_nflow_test_ood_ood_nflow_default/s0/ood/scores
+  model2_score_dir: ./results/organamnist_resnet18_28x28_test_ood_ood_vim_8/s0/ood/scores
+  ood_splits: [nearood, farood]
+  ood_scheme: ood
+
+  analyzers: [delong, bootstrapping]
+  delong:
+    types: [aggregate]  # how to analyze OODs against ID (and CS-ID) choices: [aggregate, split]
+    method: fast
+  bootstrapping:
+    types: [aggregate]
+    n_bootstraps: 1000  # number of bootstrap iterations
+    confidence_level: 0.95  # confidence level for the confidence interval

@@ -17,6 +17,7 @@ from .train_opengan_pipeline import TrainOpenGanPipeline
 from .train_pipeline import TrainPipeline
 from .test_ood_pipeline_aps import TestOODPipelineAPS
 from .visualize_ood_pipeline import VisualizeOODPipeline
+from .analyze_ood_pipeline import AnalyzeOODPipeline
 
 
 def get_pipeline(config: Config):
@@ -36,7 +37,8 @@ def get_pipeline(config: Config):
         'test_ood_aps': TestOODPipelineAPS,
         'train_nflow': TrainNormalizingFlowPipeline,
         'train_med3d': TrainMed3DPipeline,
-        'visualize_ood': VisualizeOODPipeline
+        'visualize_ood': VisualizeOODPipeline,
+        'analyze_ood': AnalyzeOODPipeline,
     }
 
     return pipelines[config.pipeline.name](config)
