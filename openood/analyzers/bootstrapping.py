@@ -72,9 +72,10 @@ class Bootstrapping(BaseAnalyzer):
             diff_metric_bootstrapped = \
                 metric1_bootstrapped - metric2_bootstrapped
             abs_diff_observed = np.abs(diff_metric_observed)
-            abs_diff_bootstrapped = \
+            # Center the bootstrap differences around the observed difference
+            abs_diffs_centered = \
                 np.abs(diff_metric_bootstrapped - diff_metric_observed)
-            p_value = max(np.mean(abs_diff_bootstrapped >= abs_diff_observed),
+            p_value = max(np.mean(abs_diffs_centered >= abs_diff_observed),
                           1 / n_bootstraps)
 
             results[metric_name] = {
