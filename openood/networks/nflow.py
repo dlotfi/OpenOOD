@@ -27,18 +27,32 @@ class ClampedMLP(nf.nets.MLP):
 
 
 class L2Norm(Flow):
-    def __init__(self, eps=1.0e-10):
+    def __init__(self, adjust_volume=True):
+        """
+        L2 normalization flow, i.e., z / ||z||_2
+        Args:
+            adjust_volume: if True, the log determinant of the Jacobian
+             is returned. When False, the module is not a flow but a
+             normalization layer, and the log determinant to account for
+             the volume change is not computed.
+        """
         super().__init__()
-        self.eps_cpu = torch.tensor(eps)
-        self.register_buffer('eps', self.eps_cpu)
+        self.adjust_volume = adjust_volume
+        self.register_buffer('eps', torch.tensor(1.0e-10))
 
     def forward(self, z):
         raise NotImplementedError('Forward pass has not been implemented.')
 
     def inverse(self, z):
-        norms = torch.norm(z, p=2, dim=1, keepdim=True)
+        # Assuming z has shape (batch_size, n1, n2, ...)
+        dim = list(range(1, z.dim()))
+        norms = torch.norm(z, p=2, dim=dim, keepdim=True)
         z_ = z / (norms + self.eps)
-        log_det = torch.sum(torch.log(norms + self.eps))
+        if self.adjust_volume:
+            n = torch.prod(torch.tensor(z.shape[1:])).item()
+            log_det = -n * torch.log(norms + self.eps).squeeze(dim)
+        else:
+            log_det = 0
         return z_, log_det
 
 
@@ -71,7 +85,7 @@ def get_normalizing_flow(network_config):
         flows += [nf.flows.ActNorm(latent_size)]
 
     if normalize_input:
-        flows += [L2Norm()]
+        flows += [L2Norm(adjust_volume=False)]
 
     q0 = nf.distributions.DiagGaussian(latent_size)
     # Note that in inverse method which is applied to the features
