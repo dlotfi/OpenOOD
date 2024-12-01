@@ -1,4 +1,8 @@
+import random
 import time
+
+import numpy as np
+import torch
 
 from openood.datasets import get_dataloader, get_ood_dataloader
 from openood.evaluators import get_evaluator
@@ -14,6 +18,17 @@ class TestOODPipeline:
     def run(self):
         # generate output directory and save the full config file
         setup_logger(self.config)
+
+        # set random seed
+        try:
+            from monai.utils import set_determinism
+            set_determinism(seed=self.config.seed,
+                            use_deterministic_algorithms=True)
+        except ImportError:
+            torch.manual_seed(self.config.seed)
+            np.random.seed(self.config.seed)
+            random.seed(self.config.seed)
+            torch.use_deterministic_algorithms(True)
 
         # get dataloader
         id_loader_dict = get_dataloader(self.config)
