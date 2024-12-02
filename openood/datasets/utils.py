@@ -1,4 +1,5 @@
 import os
+
 import torch
 from numpy import load
 from torch.utils.data import DataLoader
@@ -121,8 +122,8 @@ def get_ood_dataloader(config: Config):
     ood_config = config.ood_dataset
     CustomDataset = eval(ood_config.dataset_class)
 
-    def get_loader(name, imglist_pth, data_dir, preprocessor,
-                   data_aux_preprocessor):
+    def _get_loader(name, imglist_pth, data_dir, preprocessor,
+                    data_aux_preprocessor):
         if ood_config.dataset_class == 'Med3DImglistDataset':
             dataset = Med3DImglistDataset(name=name,
                                           imglist_pth=imglist_pth,
@@ -158,7 +159,7 @@ def get_ood_dataloader(config: Config):
             if ood_config.dataset_class != 'Med3DImglistDataset' else None
         if split == 'val':
             # validation set
-            dataloader_dict[split] = get_loader(
+            dataloader_dict[split] = _get_loader(
                 name=ood_config.name + '_' + split,
                 imglist_pth=split_config.imglist_pth,
                 data_dir=split_config.data_dir,
@@ -169,7 +170,7 @@ def get_ood_dataloader(config: Config):
             sub_dataloader_dict = {}
             for dataset_name in split_config.datasets:
                 dataset_config = split_config[dataset_name]
-                sub_dataloader_dict[dataset_name] = get_loader(
+                sub_dataloader_dict[dataset_name] = _get_loader(
                     name=ood_config.name + '_' + split,
                     imglist_pth=dataset_config.imglist_pth,
                     data_dir=dataset_config.data_dir,
@@ -234,35 +235,83 @@ def get_feature_opengan_dataloader(dataset_config: Config):
     return dataloader_dict
 
 
+def _get_feat_loader(feat_root: str, filename: str, batch_size: int,
+                     shuffle: bool, num_workers: int) -> DataLoader:
+    # load in the cached feature
+    loaded_data = load(os.path.join(feat_root, f'{filename}.npz'),
+                       allow_pickle=True)
+    total_feat = torch.from_numpy(loaded_data['feat_list'])
+    total_labels = loaded_data['label_list']
+    if torch.isnan(total_feat).any() or torch.isinf(total_feat).any():
+        print('NaN or Inf detected in the feature')
+    del loaded_data
+    # reshape the vector to fit in to the network
+    total_feat.unsqueeze_(-1).unsqueeze_(-1)
+    # let's see what we got here should be something like:
+    # torch.Size([total_num, channel_size, 1, 1])
+    print('Loaded feature size: {}'.format(total_feat.shape))
+
+    dataset = FeatDataset(feat=total_feat, labels=total_labels)
+    dataloader = DataLoader(dataset,
+                            batch_size=batch_size,
+                            shuffle=shuffle,
+                            num_workers=num_workers)
+    return dataloader
+
+
 def get_feature_nflow_dataloader(dataset_config: Config):
     feat_root = dataset_config.feat_root
 
     dataloader_dict = {}
     for d in ['id_train', 'id_val', 'ood_val']:
-        # load in the cached feature
-        loaded_data = load(os.path.join(feat_root, f'{d}.npz'),
-                           allow_pickle=True)
-        total_feat = torch.from_numpy(loaded_data['feat_list'])
-        total_labels = loaded_data['label_list']
-        if torch.isnan(total_feat).any() or torch.isinf(total_feat).any():
-            print('NaN or Inf detected in the feature')
-        del loaded_data
-        # reshape the vector to fit in to the network
-        total_feat.unsqueeze_(-1).unsqueeze_(-1)
-        # let's see what we got here should be something like:
-        # torch.Size([total_num, channel_size, 1, 1])
-        print('Loaded feature size: {}'.format(total_feat.shape))
-
         if d == 'id_train':
             split_config = dataset_config['train']
         else:
             split_config = dataset_config['val']
-
-        dataset = FeatDataset(feat=total_feat, labels=total_labels)
-        dataloader = DataLoader(dataset,
-                                batch_size=split_config.batch_size,
-                                shuffle=split_config.shuffle,
-                                num_workers=dataset_config.num_workers)
-        dataloader_dict[d] = dataloader
+        dataloader_dict[d] = _get_feat_loader(
+            feat_root,
+            filename=d,
+            batch_size=split_config.batch_size,
+            shuffle=split_config.shuffle,
+            num_workers=dataset_config.num_workers)
 
     return dataloader_dict
+
+
+def get_feature_nflow_test_dataloaders(dataset_config: Config,
+                                       ood_dataset_config: Config):
+    id_train_dataloader_dict = get_feature_nflow_dataloader(dataset_config)
+    ood_feat_root = ood_dataset_config.feat_root
+
+    id_dataloader_dict = {
+        'train':
+        id_train_dataloader_dict['id_train'],
+        'val':
+        id_train_dataloader_dict['id_val'],
+        'test':
+        _get_feat_loader(ood_feat_root,
+                         filename=dataset_config.name,
+                         batch_size=dataset_config['test'].batch_size,
+                         shuffle=dataset_config['test'].shuffle,
+                         num_workers=dataset_config.num_workers)
+    }
+
+    ood_batch_size = ood_dataset_config.batch_size
+    ood_shuffle = ood_dataset_config.shuffle
+    ood_num_workers = ood_dataset_config.num_workers
+    ood_dataloader_dict = {}
+
+    if 'val' in ood_dataset_config.split_names:
+        ood_dataloader_dict['val'] = id_train_dataloader_dict['ood_val']
+
+    for split in set(ood_dataset_config.split_names) - {'val'}:
+        ood_dataloader_dict[split] = {}
+        for d in ood_dataset_config[split].datasets:
+            ood_dataloader_dict[split][d] = _get_feat_loader(
+                ood_feat_root,
+                filename=d,
+                batch_size=ood_batch_size,
+                shuffle=ood_shuffle,
+                num_workers=ood_num_workers)
+
+    return id_dataloader_dict, ood_dataloader_dict

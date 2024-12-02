@@ -4,7 +4,8 @@ import time
 import numpy as np
 import torch
 
-from openood.datasets import get_dataloader, get_ood_dataloader
+from openood.datasets import (get_dataloader, get_ood_dataloader,
+                              get_feature_nflow_test_dataloaders)
 from openood.evaluators import get_evaluator
 from openood.networks import get_network
 from openood.postprocessors import get_postprocessor
@@ -31,8 +32,15 @@ class TestOODPipeline:
             torch.use_deterministic_algorithms(True)
 
         # get dataloader
-        id_loader_dict = get_dataloader(self.config)
-        ood_loader_dict = get_ood_dataloader(self.config)
+        if self.config.dataset.get('feat_root', None) and \
+           self.config.ood_dataset.get('feat_root', None):
+            id_loader_dict, ood_loader_dict = \
+                get_feature_nflow_test_dataloaders(
+                    self.config.dataset, self.config.ood_dataset)
+            print('Using feature-based dataloader', flush=True)
+        else:
+            id_loader_dict = get_dataloader(self.config)
+            ood_loader_dict = get_ood_dataloader(self.config)
 
         # init network
         net = get_network(self.config.network)

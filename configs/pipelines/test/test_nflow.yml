@@ -5,6 +5,15 @@ merge_option: default # disabled if 'save_output' is False choices: [default, pa
 mark: default # to mark the version of experiment
 seed: 0
 
+dataset:
+  # cached features extracted from classifier, if specified, the pipeline will use
+  # the cached features instead of extracting them from the raw inputs
+  feat_root: ''
+ood_dataset:
+  # cached features extracted from classifier, if specified, the pipeline will use
+  # the cached features instead of extracting them from the raw inputs
+  feat_root: ''
+
 num_gpus: 1
 num_workers: 4
 num_machines: 1
