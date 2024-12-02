@@ -72,10 +72,8 @@ def get_normalizing_flow(network_config):
                        method=clamp_method,
                        layers=[latent_size, hidden_size, latent_size],
                        init_zeros=True)
-        t = nf.nets.MLP(layers=[latent_size, hidden_size, latent_size],
-                        init_zeros=True) if not clamp_t else \
-            ClampedMLP(clamp=clamp_value,
-                       method=clamp_method,
+        t = ClampedMLP(clamp=clamp_value,
+                       method=clamp_method if clamp_t else None,
                        layers=[latent_size, hidden_size, latent_size],
                        init_zeros=True)
         if i % 2 == 0:
@@ -85,7 +83,7 @@ def get_normalizing_flow(network_config):
         flows += [nf.flows.ActNorm(latent_size)]
 
     if normalize_input:
-        flows += [L2Norm(adjust_volume=False)]
+        flows += [L2Norm()]
 
     q0 = nf.distributions.DiagGaussian(latent_size)
     # Note that in inverse method which is applied to the features
