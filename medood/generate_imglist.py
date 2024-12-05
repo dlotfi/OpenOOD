@@ -74,7 +74,7 @@ if __name__ == '__main__':
     csv_files = find_csv_files(args.input_dir)
     if not csv_files:
         raise FileNotFoundError(
-            f"'processed_files.csv' not found in {args.input_csv_dir}"
+            f"'processed_files.csv' not found in {args.input_dir}"
             f' or its subdirectories.')
 
     generate_imglist(csv_files, args.base_dir, args.output_dir, args.labels)

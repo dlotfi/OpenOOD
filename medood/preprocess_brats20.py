@@ -1,6 +1,6 @@
 import os
 from dataclasses import dataclass
-from typing import List, Tuple
+from typing import List, Dict
 
 import pandas as pd
 
@@ -16,10 +16,12 @@ class SplitLabeledFilePair(FilePair):
 
 
 class BraTS20_PreProcessor(BaseBrainPreProcessor):
-    def find_and_sample_files(self) -> \
-            Tuple[List[SplitLabeledFilePair],
-                  List[SplitLabeledFilePair],
-                  List[SplitLabeledFilePair]]:
+    def __init__(self, cfg: PreProcessorBrainConfig, output_dirs: Dict[str,
+                                                                       str]):
+        super().__init__(cfg)
+        self.output_dirs = output_dirs
+
+    def find_and_sample_files(self) -> Dict[str, List[SplitLabeledFilePair]]:
         csv_path = os.path.join(self.cfg.base_dir, 'name_mapping.csv')
         df = pd.read_csv(csv_path)
 
@@ -39,73 +41,47 @@ class BraTS20_PreProcessor(BaseBrainPreProcessor):
         }
 
         # Pair each file with a target file name
-        t1_paired_files = []
-        t1c_paired_files = []
-        t2f_paired_files = []
+        paired_files = {k: [] for k in self.output_dirs.keys()}
+        file_suffixes = {'t1': 't1', 't2': 't2', 't1c': 't1ce', 't2f': 'flair'}
         for split, indices in split_indices.items():
             for idx in indices:
                 subject_number = subject_numbers[idx]
                 label = labels[idx]
-                # T1 source and output pair
-                input_path = os.path.join(
-                    self.cfg.base_dir, f'BraTS20_Training_{subject_number}',
-                    f'BraTS20_Training_{subject_number}_t1.nii.gz')
-                output_path = os.path.join(
-                    self.cfg.output_dir, f'BraTS20_{subject_number}_T1.nii.gz')
-                t1_paired_files.append(
-                    SplitLabeledFilePair(input_path, output_path, split,
-                                         label))
-                if split == 'TRAIN':
-                    continue
-                # T1C source and output pair
-                t1c_input_path = input_path.replace('t1', 't1ce')
-                t1c_output_path = os.path.join(
-                    self.cfg.output_dir_t1c,
-                    f'BraTS20_{subject_number}_T1C.nii.gz')
-                t1c_paired_files.append(
-                    SplitLabeledFilePair(t1c_input_path, t1c_output_path,
-                                         split, label))
-                # T2-FLAIR source and output pair
-                t2f_input_path = input_path.replace('t1', 'flair')
-                t2f_output_path = os.path.join(
-                    self.cfg.output_dir_t2f,
-                    f'BraTS20_{subject_number}_T2F.nii.gz')
-                t2f_paired_files.append(
-                    SplitLabeledFilePair(t2f_input_path, t2f_output_path,
-                                         split, label))
+                for key in paired_files.keys():
+                    if key != 't1' and split == 'TRAIN':
+                        continue
+                    input_path = os.path.join(
+                        self.cfg.base_dir,
+                        f'BraTS20_Training_{subject_number}',
+                        f'BraTS20_Training_{subject_number}_'
+                        f'{file_suffixes[key]}.nii.gz')
+                    output_path = os.path.join(
+                        self.output_dirs[key],
+                        f'BraTS20_{subject_number}_{key.upper()}.nii.gz')
+                    paired_files[key].append(
+                        SplitLabeledFilePair(input_path, output_path, split,
+                                             label))
 
-        self.logger.info(f'Sampled {len(t1_paired_files)} T1 files '
-                         f'(TRAIN: {len(train_indices)}, '
-                         f'VALIDATION: {len(val_indices)}, '
-                         f'TEST: {len(test_indices)}).')
-        self.logger.info(f'Sampled {len(t1c_paired_files)} T1C files.'
-                         f'(VALIDATION: {len(val_indices)}, '
-                         f'TEST: {len(test_indices)}).')
-        self.logger.info(f'Sampled {len(t2f_paired_files)} T2-FLAIR files.'
-                         f'(VALIDATION: {len(val_indices)}, '
-                         f'TEST: {len(test_indices)}).')
-        return t1_paired_files, t1c_paired_files, t2f_paired_files
+        for key, files in paired_files.items():
+            self.logger.info(f'Sampled {len(files)} {key.upper()} files (' + (
+                f'TRAIN: {len(train_indices)}, ' if key == 't1' else '') +
+                             f'VALIDATION: {len(val_indices)}, ' +
+                             f'TEST: {len(test_indices)}).')
+        return paired_files
 
     def run(self):
         self.logger.info('Start preprocessing BraTS2020 dataset')
         self.logger.info(self.cfg)
         # 1. Find all files in 'Train' split and randomly split
         #    them into Train, Validation, and Test
-        t1_sampled_files, t1c_sampled_files, t2f_sampled_files = \
-            self.find_and_sample_files()
-        # 2. Normalize all T1 sampled images
-        t1_processed_files = self.normalize_images(t1_sampled_files)
-        self.save_processed_files(t1_processed_files)
-        #    Normalize all T1C (post contrast T1) sampled images
-        os.makedirs(cfg.output_dir_t1c, exist_ok=True)
-        t1c_processed_files = self.normalize_images(t1c_sampled_files)
-        csv_path = os.path.join(self.cfg.output_dir_t1c, 'processed_files.csv')
-        self.save_processed_files(t1c_processed_files, csv_path)
-        #    Normalize all T2-FLAIR sampled images
-        os.makedirs(cfg.output_dir_t2f, exist_ok=True)
-        t2f_processed_files = self.normalize_images(t2f_sampled_files)
-        csv_path = os.path.join(self.cfg.output_dir_t2f, 'processed_files.csv')
-        self.save_processed_files(t2f_processed_files, csv_path)
+        sampled_files = self.find_and_sample_files()
+        # 2. Normalize all T1, T2, T1C, and T2-FLAIR sampled images
+        for key in sampled_files.keys():
+            os.makedirs(self.output_dirs[key], exist_ok=True)
+            processed_files = self.normalize_images(sampled_files[key])
+            csv_path = os.path.join(self.output_dirs[key],
+                                    'processed_files.csv')
+            self.save_processed_files(processed_files, csv_path)
         self.logger.info('BraTS2020 dataset preprocessing completed.')
 
 
@@ -118,20 +94,22 @@ if __name__ == '__main__':
         required=True,
         help='Train, Validation, Test splits number of samples')
     cfg.parser.add_argument(
-        '--output_dir_t1c',
+        '--extra_output_dirs',
         type=str,
+        nargs='+',
         required=True,
-        help='Output directory for the processed post contrast T1 data')
-    cfg.parser.add_argument(
-        '--output_dir_t2f',
-        type=str,
-        required=True,
-        help='Output directory for the processed T2-FLAIR data')
+        help='Output directories for the processed data in '
+        'modality_name=path format (e.g., t2=path/to/t2 '
+        't1c=path/to/t1c t2f=path/to/t2f)')
     cfg.parse_args()
+    output_dirs = {'t1': cfg.output_dir}
+    output_dirs.update(
+        {kv.split('=')[0]: kv.split('=')[1]
+         for kv in cfg.extra_output_dirs})
     if cfg.num_samples is not None:
         if sum(cfg.split_num_samples) != cfg.num_samples:
             raise ValueError(
                 f'The sum of split_num_samples {cfg.split_num_samples}'
                 f' must be equal to num_samples {cfg.num_samples}.')
-    preprocessor = BraTS20_PreProcessor(cfg)
+    preprocessor = BraTS20_PreProcessor(cfg, output_dirs)
     preprocessor.run()
