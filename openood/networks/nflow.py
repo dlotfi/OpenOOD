@@ -27,30 +27,31 @@ class ClampedMLP(nf.nets.MLP):
 
 
 class L2Norm(Flow):
-    def __init__(self, adjust_volume=True):
+    def __init__(self, eps=1e-12, adjust_volume=False):
         """
         L2 normalization flow, i.e., z / ||z||_2
         Args:
+            eps: small value to avoid division by zero. Default: 1e-12
             adjust_volume: if True, the log determinant of the Jacobian
-             is returned. When False, the module is not a flow but a
-             normalization layer, and the log determinant to account for
-             the volume change is not computed.
+             is returned. When False, the module acts as a normalization
+             layer, and the log determinant to account for the volume
+             change is not computed. Default: False
         """
         super().__init__()
         self.adjust_volume = adjust_volume
-        self.register_buffer('eps', torch.tensor(1.0e-10))
+        self.register_buffer('eps', torch.tensor(eps))
 
     def forward(self, z):
         raise NotImplementedError('Forward pass has not been implemented.')
 
     def inverse(self, z):
-        # Assuming z has shape (batch_size, n1, n2, ...)
-        dim = list(range(1, z.dim()))
-        norms = torch.norm(z, p=2, dim=dim, keepdim=True)
+        # Assuming z has shape (batch_size, channels, n1, n2, ...)
+        norms = torch.norm(z, p=2, dim=1, keepdim=True)
         z_ = z / (norms + self.eps)
         if self.adjust_volume:
-            n = torch.prod(torch.tensor(z.shape[1:])).item()
-            log_det = -n * torch.log(norms + self.eps).squeeze(dim)
+            n = z.shape[1] + 1
+            log_det = (torch.log(self.eps) -
+                       n * torch.log(norms + self.eps)).squeeze()
         else:
             log_det = 0
         return z_, log_det
@@ -83,7 +84,7 @@ def get_normalizing_flow(network_config):
         flows += [nf.flows.ActNorm(latent_size)]
 
     if normalize_input:
-        flows += [L2Norm()]
+        flows += [L2Norm(adjust_volume=False)]
 
     q0 = nf.distributions.DiagGaussian(latent_size)
     # Note that in inverse method which is applied to the features
