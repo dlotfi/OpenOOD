@@ -30,7 +30,7 @@ class MultiScaleNormalizingFlow(nn.Module):
 
     def inverse(self, x):
         zs = self._apply_to_scales(x, lambda flow, feats: flow.inverse(feats))
-        return torch.cat(zs)
+        return torch.cat(zs, dim=1)
 
     def log_prob(self, x):
         log_probs = self._apply_to_scales(
