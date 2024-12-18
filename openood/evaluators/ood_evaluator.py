@@ -1,6 +1,6 @@
 import csv
 import os
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
 import numpy as np
 import torch.nn as nn
@@ -74,23 +74,44 @@ class OODEvaluator(BaseEvaluator):
 
         print(f'Evaluating splits: {ood_splits}')
 
+        ood_preds, ood_confs, ood_gts = [], [], []
+        metrics_list = []
         for split in ood_splits:
             # load 'split' data and compute ood metrics
             print(u'\u2500' * 70, flush=True)
-            self._eval_ood(net, [id_pred, id_conf, id_gt],
-                           ood_data_loaders,
-                           postprocessor,
-                           ood_split=split)
+            split_ood_list, split_metrics = self._eval_ood(
+                net, [id_pred, id_conf, id_gt],
+                ood_data_loaders,
+                postprocessor,
+                ood_split=split)
+            ood_preds.append(split_ood_list[0])
+            ood_confs.append(split_ood_list[1])
+            ood_gts.append(split_ood_list[2])
+            metrics_list.append(split_metrics)
 
-    def _eval_ood(self,
-                  net: nn.Module,
-                  id_list: List[np.ndarray],
-                  ood_data_loaders: Dict[str, Dict[str, DataLoader]],
-                  postprocessor: BasePostprocessor,
-                  ood_split: str = 'nearood'):
+        print('Computing total macro-average metrics...', flush=True)
+        metrics_list = np.concatenate(metrics_list, axis=0)
+        metrics_mean = np.mean(metrics_list, axis=0)
+        print('Computing total micro-average metrics...', flush=True)
+        all_pred = np.concatenate([id_pred] + ood_preds)
+        all_conf = np.concatenate([id_conf] + ood_confs)
+        all_label = np.concatenate([id_gt] + ood_gts)
+        ood_metrics = compute_all_metrics(all_conf, all_label, all_pred)
+        if self.config.recorder.save_csv:
+            self._save_csv(metrics_mean, dataset_name='all (macro-average)')
+            self._save_csv(ood_metrics, dataset_name='all (micro-average)')
+
+    def _eval_ood(
+            self,
+            net: nn.Module,
+            id_list: List[np.ndarray],
+            ood_data_loaders: Dict[str, Dict[str, DataLoader]],
+            postprocessor: BasePostprocessor,
+            ood_split: str = 'nearood') -> Tuple[List[np.ndarray], np.ndarray]:
         print(f'Processing {ood_split}...', flush=True)
         [id_pred, id_conf, id_gt] = id_list
         metrics_list = []
+        ood_split_pred, ood_split_conf, ood_split_gt = [], [], []
         for dataset_name, ood_dl in ood_data_loaders[ood_split].items():
             print(f'Performing inference on {dataset_name} dataset...',
                   flush=True)
@@ -110,11 +131,20 @@ class OODEvaluator(BaseEvaluator):
                 self._save_csv(ood_metrics, dataset_name=dataset_name)
             metrics_list.append(ood_metrics)
 
+            ood_split_pred.append(ood_pred)
+            ood_split_conf.append(ood_conf)
+            ood_split_gt.append(ood_gt)
+
         print('Computing mean metrics...', flush=True)
         metrics_list = np.array(metrics_list)
         metrics_mean = np.mean(metrics_list, axis=0)
         if self.config.recorder.save_csv:
             self._save_csv(metrics_mean, dataset_name=ood_split)
+
+        ood_split_pred = np.concatenate(ood_split_pred)
+        ood_split_conf = np.concatenate(ood_split_conf)
+        ood_split_gt = np.concatenate(ood_split_gt)
+        return [ood_split_pred, ood_split_conf, ood_split_gt], metrics_list
 
     def eval_ood_val(self, net: nn.Module, id_data_loaders: Dict[str,
                                                                  DataLoader],
