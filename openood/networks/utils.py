@@ -1,4 +1,5 @@
 # import mmcv
+import os
 from copy import deepcopy
 import numpy as np
 import torch
@@ -401,6 +402,8 @@ def get_network(network_config):
         raise Exception('Unexpected Network Architecture!')
 
     if network_config.pretrained:
+        # Suppress pytorch warning of loading weights with weights_only=False
+        os.environ['TORCH_FORCE_WEIGHTS_ONLY_LOAD'] = '1'
         if type(net) is dict:
             if isinstance(network_config.checkpoint, list):
                 for subnet, checkpoint in zip(net.values(),
