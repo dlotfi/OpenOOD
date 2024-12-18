@@ -2,6 +2,7 @@
 # sh scripts/ood/msp/brats20_t1_test_fsood_odin.sh
 
 PYTHONPATH='.':$PYTHONPATH \
+export CUBLAS_WORKSPACE_CONFIG=:4096:8
 
 python main.py \
     --config configs/datasets/medood/brats20_t1.yml \
@@ -14,5 +15,4 @@ python main.py \
     --num_workers 8 \
     --evaluator.ood_scheme fsood \
     --evaluator.ood_splits transformation_shift population_shift modality_shift diagnostic_shift organ_shift \
-    --network.checkpoint "./results/brats20_t1_resnet3d_18_med3d_e100_lr0.0001_26/s0/best.ckpt" \
-    --mark 26
+    --network.checkpoint "./results/brats20_t1_resnet3d_18_med3d_e100_lr0.0001_default/s0/best.ckpt"

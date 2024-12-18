@@ -16,5 +16,4 @@ python main.py \
     --network.pretrained False \
     --network.backbone.name resnet3d_18 \
     --network.backbone.pretrained True \
-    --network.backbone.checkpoint "./results/brats20_t1_resnet3d_18_med3d_e100_lr0.0001_26/s0/best.ckpt" \
-    --mark 26
+    --network.backbone.checkpoint "./results/brats20_t1_resnet3d_18_med3d_e100_lr0.0001_default/s0/best.ckpt"
