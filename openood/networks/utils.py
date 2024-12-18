@@ -448,6 +448,10 @@ def get_network(network_config):
                     checkpoint['fc.weight'] = checkpoint.pop('linear.weight')
                     checkpoint['fc.bias'] = checkpoint.pop('linear.bias')
                 net.load_state_dict(checkpoint, strict=False)
+                missing_keys = \
+                    set(net.state_dict().keys()) - set(checkpoint.keys())
+                if missing_keys:
+                    print('WARNING: Missing keys: ', missing_keys)
         print('Model Loading {} Completed!'.format(network_config.name))
 
     if network_config.num_gpus > 1:
