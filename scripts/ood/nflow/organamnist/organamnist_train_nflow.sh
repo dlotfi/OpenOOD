@@ -24,5 +24,6 @@ python main.py \
     configs/pipelines/train/train_nflow.yml \
     configs/postprocessors/nflow.yml \
     --dataset.feat_root "./results/organamnist_resnet18_28x28_feat_extract_nflow_${MARK}/s${SEED}" \
+    --dataset.normalize_feat True \
     --seed ${SEED} \
     --mark ${MARK}

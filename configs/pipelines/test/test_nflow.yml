@@ -9,10 +9,12 @@ dataset:
   # cached features extracted from classifier, if specified, the pipeline will use
   # the cached features instead of extracting them from the raw inputs
   feat_root: ''
+  normalize_feat: False
 ood_dataset:
   # cached features extracted from classifier, if specified, the pipeline will use
   # the cached features instead of extracting them from the raw inputs
   feat_root: ''
+  normalize_feat: False
 
 num_gpus: 1
 num_workers: 8
