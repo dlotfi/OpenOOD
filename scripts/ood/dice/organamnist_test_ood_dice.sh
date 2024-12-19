@@ -12,5 +12,4 @@ python main.py \
     configs/postprocessors/dice.yml \
     --num_workers 8 \
     --network.checkpoint "./results/organamnist_resnet18_28x28/s0/resnet18_28_1.pth" \
-    --network.checkpoint_key "net" \
-    --mark 4
+    --network.checkpoint_key "net"

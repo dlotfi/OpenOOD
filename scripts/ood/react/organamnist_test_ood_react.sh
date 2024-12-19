@@ -15,5 +15,4 @@ python main.py \
     --network.backbone.pretrained True \
     --network.backbone.checkpoint "./results/organamnist_resnet18_28x28/s0/resnet18_28_1.pth" \
     --network.backbone.checkpoint_key "net" \
-    --num_workers 8 \
-    --mark 3
+    --num_workers 8

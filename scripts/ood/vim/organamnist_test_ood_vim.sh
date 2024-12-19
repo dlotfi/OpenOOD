@@ -13,5 +13,4 @@ python main.py \
     --num_workers 8 \
     --network.checkpoint "./results/organamnist_resnet18_28x28/s0/resnet18_28_1.pth" \
     --network.checkpoint_key "net" \
-    --mark 8 \
     --postprocessor.postprocessor_args.dim 256

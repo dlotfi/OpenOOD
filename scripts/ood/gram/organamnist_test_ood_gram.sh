@@ -2,6 +2,7 @@
 # sh scripts/ood/gram/organamnist_test_ood_gram.sh
 
 PYTHONPATH='.':$PYTHONPATH \
+export CUBLAS_WORKSPACE_CONFIG=:4096:8
 
 python main.py \
     --config configs/datasets/medmnist/organamnist.yml \
@@ -12,5 +13,4 @@ python main.py \
     configs/postprocessors/gram.yml \
     --num_workers 8 \
     --network.checkpoint "./results/organamnist_resnet18_28x28/s0/resnet18_28_1.pth" \
-    --network.checkpoint_key "net" \
-    --mark 7
+    --network.checkpoint_key "net"
