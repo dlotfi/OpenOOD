@@ -15,6 +15,7 @@ network:
 
 pipeline:
   name: feat_extract_nflow
+  extract_target: train
 
 evaluator:
   name: base
