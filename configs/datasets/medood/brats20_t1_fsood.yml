@@ -15,7 +15,7 @@ ood_dataset:
                 modality_shift, diagnostic_shift, organ_shift]
   val:
     data_dir: ./data/medood/
-    imglist_pth: ./data/benchmark_imglist/medood/val_brats20_t1c.txt
+    imglist_pth: ./data/benchmark_imglist/medood/val_brats20_t2.txt
   csid:
     datasets: [ lumiere_t1 ]
     lumiere_t1:
