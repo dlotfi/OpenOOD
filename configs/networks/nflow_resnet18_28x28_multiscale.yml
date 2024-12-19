@@ -1,0 +1,36 @@
+network:
+  name: nflow_multiscale
+  num_classes: '@{dataset.num_classes}'
+  image_size: '@{dataset.image_size}'
+  pretrained: False
+  checkpoint: none           # ignore if pretrained is false
+  num_gpus: '@{num_gpus}'
+
+  # normalizing flow network (RealNVP)
+  nflow:
+    latent_size: [64, 64, 128, 256, 512]  # The size of the latent spaces
+    hidden_size: [64, 64, 128, 256, 512]  # The number of the hidden units
+    n_flows: [4, 4, 4, 4, 4]  # Number of flows
+    clamp_value: 3.0  # The value used for clamping st_network outputs
+    clamp_method: "ATAN"  # The clamp method, choices: [HARD, TANH, SIGMOID, ATAN]
+    clamp_t: False  # Whether to clamp the t-network outputs as well as s-network outputs
+    normalize_input: True  # l2-normalize the input of the nflow network
+
+  # network used for feature extraction and aggregation
+  backbone:
+    name: feat_concat
+    num_gpus: '@{num_gpus}'
+
+    # feature aggregation network
+    feat_agg:
+      layers: [1, 2, 3, 4, 5]
+
+    # network used for feature extraction
+    encoder:
+      name: resnet18_28x28
+      num_classes: '@{dataset.num_classes}'
+      image_size: '@{dataset.image_size}'
+      pretrained: False
+      checkpoint: none
+      checkpoint_key: none
+      num_gpus: '@{num_gpus}'
