@@ -107,25 +107,25 @@ class TSNEVisualizer(BaseVisualizer):
 
     def plot_tsne(self):
         output_dir = self.config.output_dir
-        normalize_feats = self.plot_config.normalize_feats
+        l2_normalize_feat = self.plot_config.l2_normalize_feat
         n_samples = self.plot_config.n_samples
 
         feats_dict = {}
         for split_name, dataset_list in self.datasets.items():
             feats = self.load_features([f'{d}.npz' for d in dataset_list],
                                        separate=True,
-                                       normalize=normalize_feats)
+                                       l2_normalize=l2_normalize_feat)
             feats = self.random_sample([feats],
                                        array_names=dataset_list,
                                        n_samples=n_samples)
             feats_dict[split_name] = feats
 
         print('Plotting t-SNE for features of the backbone', flush=True)
-        if normalize_feats:
-            title = 't-SNE for Normalized Backbone ' \
+        if l2_normalize_feat:
+            title = 't-SNE for L2-Normalized Backbone ' \
                     'Features of ID and OOD Samples'
             output_path = os.path.join(output_dir,
-                                       'tsne_features_normalized.png')
+                                       'tsne_features_l2_normalized.png')
         else:
             title = 't-SNE for Backbone Features of ID and OOD Samples'
             output_path = os.path.join(output_dir, 'tsne_features.png')
@@ -133,7 +133,7 @@ class TSNEVisualizer(BaseVisualizer):
 
     def plot_tsne_split(self):
         output_dir = os.path.join(self.config.output_dir, 'split_plots')
-        normalize_feats = self.plot_config.normalize_feats
+        l2_normalize_feat = self.plot_config.l2_normalize_feat
         n_samples = self.plot_config.n_samples
 
         os.makedirs(output_dir, exist_ok=True)
@@ -147,7 +147,7 @@ class TSNEVisualizer(BaseVisualizer):
                 dataset = [dataset] if type(dataset) is not list else dataset
                 feats = self.load_features([f'{d}.npz' for d in dataset],
                                            separate=True,
-                                           normalize=normalize_feats)
+                                           l2_normalize=l2_normalize_feat)
                 feats = self.random_sample([feats],
                                            array_names=dataset,
                                            n_samples=n_samples)
@@ -160,11 +160,12 @@ class TSNEVisualizer(BaseVisualizer):
         for split_name, datasets_feats in feats_dict.items():
             print(f'Plotting t-SNE for {split_name}', flush=True)
             combined_feats_dict = {**id_feats_dict, **datasets_feats}
-            if normalize_feats:
-                title = 't-SNE for Normalized Backbone Features of ' \
+            if l2_normalize_feat:
+                title = 't-SNE for L2-Normalized Backbone Features of ' \
                         f'ID and {split_name} Samples'
                 output_path = os.path.join(
-                    output_dir, f'tsne_features_normalized_{split_name}.png')
+                    output_dir,
+                    f'tsne_features_l2_normalized_{split_name}.png')
             else:
                 title = 't-SNE for Backbone Features of ' \
                         f'ID and {split_name} Samples'

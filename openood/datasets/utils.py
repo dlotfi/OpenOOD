@@ -236,8 +236,8 @@ def get_feature_opengan_dataloader(dataset_config: Config):
 
 
 def _get_feat_loader(feat_root: str, filename: str, batch_size: int,
-                     normalize_features: bool, shuffle: bool, drop_last: bool,
-                     num_workers: int) -> DataLoader:
+                     z_normalize_features: bool, shuffle: bool,
+                     drop_last: bool, num_workers: int) -> DataLoader:
     # load in the cached feature
     loaded_data = load(os.path.join(feat_root, f'{filename}.npz'),
                        allow_pickle=True)
@@ -252,11 +252,12 @@ def _get_feat_loader(feat_root: str, filename: str, batch_size: int,
     # torch.Size([total_num, channel_size, 1, 1])
     print('Loaded feature size: {}'.format(total_feat.shape))
     # z-score normalize the feature
-    if normalize_features:
+    if z_normalize_features:
         mean = total_feat.mean(dim=0)
         std = total_feat.std(dim=0)
         total_feat = (total_feat - mean) / (std + 1e-6)
-        print('Features have bean z-score normalized in each dimension')
+        print('Features have bean z-score normalized '
+              'separately in each dimension')
 
     dataset = FeatDataset(feat=total_feat, labels=total_labels)
     dataloader = DataLoader(dataset,
@@ -269,7 +270,7 @@ def _get_feat_loader(feat_root: str, filename: str, batch_size: int,
 
 def get_feature_nflow_dataloader(dataset_config: Config):
     feat_root = dataset_config.feat_root
-    normalize_features = bool(dataset_config.normalize_feat)
+    z_normalize_features = bool(dataset_config.z_normalize_feat)
 
     dataloader_dict = {}
     for d in ['id_train', 'id_val', 'ood_val']:
@@ -281,7 +282,7 @@ def get_feature_nflow_dataloader(dataset_config: Config):
             feat_root,
             filename=d,
             batch_size=split_config.batch_size,
-            normalize_features=normalize_features,
+            z_normalize_features=z_normalize_features,
             shuffle=bool(split_config.shuffle),
             drop_last=bool(split_config.drop_last),
             num_workers=dataset_config.num_workers)
@@ -294,10 +295,10 @@ def get_feature_nflow_test_dataloaders(dataset_config: Config,
     id_train_dataloader_dict = get_feature_nflow_dataloader(dataset_config)
     ood_feat_root = ood_dataset_config.feat_root
 
-    id_normalize_features = bool(dataset_config.normalize_feat)
-    ood_normalize_features = bool(ood_dataset_config.normalize_feat)
-    if id_normalize_features ^ ood_normalize_features:
-        raise ValueError('normalize_features should be set to True for '
+    id_z_normalize_features = bool(dataset_config.z_normalize_feat)
+    ood_z_normalize_features = bool(ood_dataset_config.z_normalize_feat)
+    if id_z_normalize_features ^ ood_z_normalize_features:
+        raise ValueError('z_normalize_feat should be set to True for '
                          'all or none of the datasets.')
 
     test_config = dataset_config['test']
@@ -310,7 +311,7 @@ def get_feature_nflow_test_dataloaders(dataset_config: Config,
         _get_feat_loader(ood_feat_root,
                          filename=dataset_config.name,
                          batch_size=test_config.batch_size,
-                         normalize_features=id_normalize_features,
+                         z_normalize_features=id_z_normalize_features,
                          shuffle=bool(test_config.shuffle),
                          drop_last=bool(test_config.drop_last),
                          num_workers=dataset_config.num_workers)
@@ -332,7 +333,7 @@ def get_feature_nflow_test_dataloaders(dataset_config: Config,
                 ood_feat_root,
                 filename=d,
                 batch_size=ood_batch_size,
-                normalize_features=ood_normalize_features,
+                z_normalize_features=ood_z_normalize_features,
                 shuffle=ood_shuffle,
                 drop_last=ood_drop_last,
                 num_workers=ood_num_workers)

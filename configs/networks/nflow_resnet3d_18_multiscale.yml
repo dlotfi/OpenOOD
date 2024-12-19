@@ -14,7 +14,7 @@ network:
     clamp_value: 3.0  # The value used for clamping st_network outputs
     clamp_method: "ATAN"  # The clamp method, choices: [HARD, TANH, SIGMOID, ATAN]
     clamp_t: False  # Whether to clamp the t-network outputs as well as s-network outputs
-    normalize_input: True  # l2-normalize the input of the nflow network
+    l2_normalize: True  # l2-normalize the input of the nflow network
 
   # network used for feature extraction and aggregation
   backbone:

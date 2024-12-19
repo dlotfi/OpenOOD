@@ -27,9 +27,7 @@ python main.py \
     configs/pipelines/test/test_nflow.yml \
     configs/postprocessors/nflow.yml \
     --dataset.feat_root "./results/organamnist_resnet18_28x28_feat_extract_nflow_${MARK}/s${SEED}" \
-    --dataset.normalize_feat True \
     --ood_dataset.feat_root "./results/organamnist_nflow_feat_extract_nflow_${MARK}/s${SEED}" \
-    --ood_dataset.normalize_feat True \
     --network.pretrained True \
     --network.checkpoint "./results/organamnist_nflow_nflow_e100_lr0.0001_${MARK}/s${SEED}/best_nflow.ckpt" None \
     --network.backbone.pretrained False \

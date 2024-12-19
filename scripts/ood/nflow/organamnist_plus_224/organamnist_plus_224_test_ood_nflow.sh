@@ -13,7 +13,7 @@ python main.py \
     --dataset.normalization_type imagenet \
     --network.pretrained True \
     --network.checkpoint "./results/organamnist_224_nflow_nflow_e100_lr0.0001_default/s${SEED}/best_nflow.ckpt" None \
-    --network.nflow.normalize_input True \
+    --network.nflow.l2_normalize True \
     --network.nflow.clamp_value 10.0 \
     --network.backbone.pretrained True \
     --network.backbone.checkpoint "results/organamnist_224_resnet18_224/organamnist_224_endToEnd_resnet18_s9930641_best.pth" \

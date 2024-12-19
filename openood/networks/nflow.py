@@ -58,7 +58,7 @@ class L2Norm(Flow):
 
 
 def get_normalizing_flow(network_config):
-    normalize_input = network_config.normalize_input
+    l2_normalize = network_config.l2_normalize
     latent_size = network_config.latent_size
     hidden_size = network_config.hidden_size
     clamp_value = network_config.clamp_value
@@ -83,7 +83,7 @@ def get_normalizing_flow(network_config):
             flows += [nf.flows.MaskedAffineFlow(1 - b, t, s)]
         flows += [nf.flows.ActNorm(latent_size)]
 
-    if normalize_input:
+    if l2_normalize:
         flows += [L2Norm(adjust_volume=False)]
 
     q0 = nf.distributions.DiagGaussian(latent_size)

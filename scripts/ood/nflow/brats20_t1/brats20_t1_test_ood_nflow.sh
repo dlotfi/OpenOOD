@@ -16,7 +16,7 @@ python main.py \
     --evaluator.ood_splits transformation_shift population_shift modality_shift diagnostic_shift organ_shift \
     --network.pretrained True \
     --network.checkpoint "./results/brats20_t1_nflow_nflow_e100_lr0.0001_${MARK}/s${SEED}/best_nflow.ckpt" None \
-    --network.nflow.normalize_input True \
+    --network.nflow.l2_normalize True \
     --network.backbone.pretrained True \
     --network.backbone.checkpoint "./results/brats20_t1_resnet3d_18_med3d_e100_lr0.0001_default/s${SEED}/best.ckpt" \
     --seed ${SEED} \

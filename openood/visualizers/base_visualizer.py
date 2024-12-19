@@ -155,13 +155,13 @@ class BaseVisualizer(ABC):
     def load_features(self,
                       filenames: List[str],
                       separate=False,
-                      normalize=None):
+                      l2_normalize=None):
         feat_dir = self.config.visualizer.feat_dir
         feat_list = []
         for filename in filenames:
             feature_dict = np.load(os.path.join(feat_dir, filename))
             feats = feature_dict['feat_list']
-            if normalize is not None:
+            if l2_normalize is not None:
                 feats = sk_normalize(feats, norm='l2', axis=1)
             feat_list.append(feats)
         if not separate:

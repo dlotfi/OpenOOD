@@ -22,7 +22,7 @@ python main.py \
     configs/preprocessors/base_preprocessor.yml \
     configs/postprocessors/nflow.yml \
     --dataset.feat_root "./results/covid_resnet18_224x224_feat_extract_nflow_default/s${SEED}" \
-    --network.nflow.normalize_input True \
+    --network.nflow.l2_normalize True \
     --network.backbone.pretrained True \
     --network.backbone.checkpoint "./results/covid_resnet18_224x224_base_e200_lr0.0001_default/s${SEED}/best.ckpt" \
     --seed ${SEED}

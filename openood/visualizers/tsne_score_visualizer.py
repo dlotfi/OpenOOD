@@ -67,7 +67,7 @@ class TSNEScoreVisualizer(TSNEVisualizer):
 
     def plot_tsne_score(self):
         output_dir = self.config.output_dir
-        normalize_feats = self.plot_config.normalize_feats
+        l2_normalize_feat = self.plot_config.l2_normalize_feat
         colored_id = self.plot_config.colored_id
         log_scale = self.plot_config.log_scale
         n_samples = self.plot_config.n_samples
@@ -77,7 +77,7 @@ class TSNEScoreVisualizer(TSNEVisualizer):
         for split_name, dataset_list in self.datasets.items():
             feats = self.load_features([f'{d}.npz' for d in dataset_list],
                                        separate=True,
-                                       normalize=normalize_feats)
+                                       l2_normalize=l2_normalize_feat)
             scores = self.load_scores([f'{d}.npz' for d in dataset_list],
                                       separate=True)
             scores, feats = self.random_sample([scores, feats],
@@ -88,11 +88,11 @@ class TSNEScoreVisualizer(TSNEVisualizer):
             scores_dict[split_name] = scores
 
         print('Plotting t-SNE for features', flush=True)
-        if normalize_feats:
-            title = 't-SNE for Normalized Backbone Features of ' \
+        if l2_normalize_feat:
+            title = 't-SNE for L2-Normalized Backbone Features of ' \
                     'ID and OOD Samples'
             output_path = os.path.join(output_dir,
-                                       'tsne_scores_normalized.png')
+                                       'tsne_scores_l2_normalized.png')
         else:
             title = 't-SNE for Backbone Features of ID and OOD Samples'
             output_path = os.path.join(output_dir, 'tsne_scores.png')
@@ -102,7 +102,7 @@ class TSNEScoreVisualizer(TSNEVisualizer):
 
     def plot_tsne_score_split(self):
         output_dir = os.path.join(self.config.output_dir, 'split_plots')
-        normalize_feats = self.plot_config.normalize_feats
+        l2_normalize_feat = self.plot_config.l2_normalize_feat
         colored_id = self.plot_config.colored_id
         log_scale = self.plot_config.log_scale
         n_samples = self.plot_config.n_samples
@@ -120,7 +120,7 @@ class TSNEScoreVisualizer(TSNEVisualizer):
                 dataset = [dataset] if type(dataset) is not list else dataset
                 feats = self.load_features([f'{d}.npz' for d in dataset],
                                            separate=True,
-                                           normalize=normalize_feats)
+                                           l2_normalize=l2_normalize_feat)
                 scores = self.load_scores([f'{d}.npz' for d in dataset],
                                           separate=True)
                 scores, feats = self.random_sample([scores, feats],
@@ -143,12 +143,12 @@ class TSNEScoreVisualizer(TSNEVisualizer):
                 **id_scores_dict,
                 **scores_dict[split_name]
             }
-            if normalize_feats:
-                title = 't-SNE for Normalized Backbone Features with ' \
+            if l2_normalize_feat:
+                title = 't-SNE for L2-Normalized Backbone Features with ' \
                         f'Scores of ID and {split_name} Samples'
                 output_path = os.path.join(
                     output_dir,
-                    f'tsne_features_normalized_scores_{split_name}.png')
+                    f'tsne_features_l2_normalized_scores_{split_name}.png')
             else:
                 title = 't-SNE for Backbone Features with Scores ' \
                         f'of ID and {split_name} Samples'

@@ -6,7 +6,7 @@ from .tsne_visualizer import TSNEVisualizer
 class TSNEFlowVisualizer(TSNEVisualizer):
     def plot_tsne(self):
         output_dir = self.config.output_dir
-        normalize_feats = self.plot_config.normalize_feats
+        l2_normalize_feat = self.plot_config.l2_normalize_feat
         n_samples = self.plot_config.n_samples
 
         feats_dict = {}
@@ -14,7 +14,7 @@ class TSNEFlowVisualizer(TSNEVisualizer):
         for split_name, dataset_list in self.datasets.items():
             feats = self.load_features([f'{d}.npz' for d in dataset_list],
                                        separate=True,
-                                       normalize=normalize_feats)
+                                       l2_normalize=l2_normalize_feat)
             feats_flow = self.load_features(
                 [f'{d}_flow.npz' for d in dataset_list], separate=True)
             feats, feats_flow = self.random_sample([feats, feats_flow],
@@ -27,11 +27,11 @@ class TSNEFlowVisualizer(TSNEVisualizer):
             'Plotting t-SNE for features of the backbone '
             'and normalizing flow',
             flush=True)
-        if normalize_feats:
-            title = 't-SNE for Normalized Backbone Features of ' \
+        if l2_normalize_feat:
+            title = 't-SNE for L2-Normalized Backbone Features of ' \
                     'ID and OOD Samples'
             output_path = os.path.join(output_dir,
-                                       'tsne_features_normalized.png')
+                                       'tsne_features_l2_normalized.png')
         else:
             title = 't-SNE for Backbone Features of ID and OOD Samples'
             output_path = os.path.join(output_dir, 'tsne_features.png')

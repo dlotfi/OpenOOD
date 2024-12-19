@@ -14,7 +14,7 @@ python main.py \
     --num_workers 8 \
     --network.pretrained True \
     --network.checkpoint "./results/brats20_t1_nflow_nflow_e100_lr0.0001_${MARK}/s${SEED}/best_nflow.ckpt" None \
-    --network.nflow.normalize_input True \
+    --network.nflow.l2_normalize True \
     --network.backbone.pretrained True \
     --network.backbone.checkpoint "./results/brats20_t1_resnet3d_18_med3d_e100_lr0.0001_${MARK}/s${SEED}/best.ckpt" \
     --seed ${SEED} \

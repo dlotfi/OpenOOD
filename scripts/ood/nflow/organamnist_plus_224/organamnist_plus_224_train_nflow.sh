@@ -23,7 +23,7 @@ python main.py \
     configs/preprocessors/base_preprocessor.yml \
     configs/postprocessors/nflow.yml \
     --dataset.feat_root "./results/organamnist_224_resnet18_224x224_feat_extract_nflow_default/s${SEED}" \
-    --network.nflow.normalize_input True \
+    --network.nflow.l2_normalize True \
     --network.nflow.clamp_value 10.0 \
     --network.backbone.pretrained True \
     --network.backbone.checkpoint "./results/organamnist_224_resnet18_224/organamnist_224_endToEnd_resnet18_s9930641_best.pth" \

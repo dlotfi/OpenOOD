@@ -12,7 +12,7 @@ python main.py \
     --num_workers 8 \
     --network.pretrained True \
     --network.checkpoint "./results/covid_nflow_nflow_e100_lr0.0001_default/s${SEED}/best_nflow.ckpt" None \
-    --network.nflow.normalize_input True \
+    --network.nflow.l2_normalize True \
     --network.backbone.pretrained True \
     --network.backbone.checkpoint "./results/covid_resnet18_224x224_base_e200_lr0.0001_default/s${SEED}/best.ckpt" \
     --seed ${SEED}
