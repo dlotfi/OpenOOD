@@ -6,6 +6,7 @@ from .feat_extract_nflow_pipeline import FeatExtractNormalizingFlowPipeline
 from .finetune_pipeline import FinetunePipeline
 from .test_acc_pipeline import TestAccPipeline
 from .test_ad_pipeline import TestAdPipeline
+from .test_nflow_pipeline import TestNormalizingFlowPipeline
 from .test_ood_pipeline import TestOODPipeline
 from .train_ad_pipeline import TrainAdPipeline
 from .train_aux_pipeline import TrainARPLGANPipeline
@@ -29,6 +30,7 @@ def get_pipeline(config: Config):
         'feat_extract_opengan': FeatExtractOpenGANPipeline,
         'feat_extract_nflow': FeatExtractNormalizingFlowPipeline,
         'test_ood': TestOODPipeline,
+        'test_nflow': TestNormalizingFlowPipeline,
         'test_ad': TestAdPipeline,
         'train_ad': TrainAdPipeline,
         'train_oe': TrainOEPipeline,

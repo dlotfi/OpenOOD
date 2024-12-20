@@ -33,7 +33,7 @@ network:
     checkpoint_key: none
 
 pipeline:
-  name: test_ood
+  name: test_nflow
 
 evaluator:
   name: ood
