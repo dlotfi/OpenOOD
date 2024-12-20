@@ -30,6 +30,8 @@ network:
 pipeline:
   name: feat_extract_nflow
   extract_target: test
+  extract_backbone: True
+  extract_nflow: True
 
 evaluator:
   name: base

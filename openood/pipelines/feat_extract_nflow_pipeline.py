@@ -121,16 +121,20 @@ class FeatExtractNormalizingFlowPipeline:
         evaluator = get_evaluator(self.config)
 
         if self.config.pipeline.extract_target == 'test':
-            self.extract_backbone_features_test(net, evaluator, id_loader_dict,
-                                                ood_loader_dict)
-            self.config.ood_dataset.feat_root = self.config.output_dir
-            id_loader_dict, ood_loader_dict = \
-                get_feature_nflow_test_dataloaders(
-                    dataset_config=self.config.dataset,
-                    ood_dataset_config=self.config.ood_dataset,
-                    load_train_val=False)
-            self.extract_nflow_features_test(net, evaluator, id_loader_dict,
-                                             ood_loader_dict)
+            if self.config.pipeline.extract_backbone:
+                self.extract_backbone_features_test(net, evaluator,
+                                                    id_loader_dict,
+                                                    ood_loader_dict)
+            if self.config.pipeline.extract_nflow:
+                self.config.ood_dataset.feat_root = self.config.output_dir
+                id_loader_dict, ood_loader_dict = \
+                    get_feature_nflow_test_dataloaders(
+                        dataset_config=self.config.dataset,
+                        ood_dataset_config=self.config.ood_dataset,
+                        load_train_val=False)
+                self.extract_nflow_features_test(net, evaluator,
+                                                 id_loader_dict,
+                                                 ood_loader_dict)
         else:
             self.extract_features_train_val(net, evaluator, id_loader_dict,
                                             ood_loader_dict)
