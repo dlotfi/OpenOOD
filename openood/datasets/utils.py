@@ -291,9 +291,11 @@ def get_feature_nflow_dataloader(dataset_config: Config):
 
 
 def get_feature_nflow_test_dataloaders(dataset_config: Config,
-                                       ood_dataset_config: Config):
-    id_train_dataloader_dict = get_feature_nflow_dataloader(dataset_config)
+                                       ood_dataset_config: Config,
+                                       load_train_val: bool = True):
     ood_feat_root = ood_dataset_config.feat_root
+    id_dataloader_dict = {}
+    ood_dataloader_dict = {}
 
     id_z_normalize_features = bool(dataset_config.z_normalize_feat)
     ood_z_normalize_features = bool(ood_dataset_config.z_normalize_feat)
@@ -301,30 +303,27 @@ def get_feature_nflow_test_dataloaders(dataset_config: Config,
         raise ValueError('z_normalize_feat should be set to True for '
                          'all or none of the datasets.')
 
+    if load_train_val:
+        id_train_dataloader_dict = get_feature_nflow_dataloader(dataset_config)
+        id_dataloader_dict['train'] = id_train_dataloader_dict['id_train']
+        id_dataloader_dict['val'] = id_train_dataloader_dict['id_val']
+        if 'val' in ood_dataset_config.split_names:
+            ood_dataloader_dict['val'] = id_train_dataloader_dict['ood_val']
+
     test_config = dataset_config['test']
-    id_dataloader_dict = {
-        'train':
-        id_train_dataloader_dict['id_train'],
-        'val':
-        id_train_dataloader_dict['id_val'],
-        'test':
-        _get_feat_loader(ood_feat_root,
-                         filename=dataset_config.name,
-                         batch_size=test_config.batch_size,
-                         z_normalize_features=id_z_normalize_features,
-                         shuffle=bool(test_config.shuffle),
-                         drop_last=bool(test_config.drop_last),
-                         num_workers=dataset_config.num_workers)
-    }
+    id_dataloader_dict['test'] = _get_feat_loader(
+        ood_feat_root,
+        filename=dataset_config.name,
+        batch_size=test_config.batch_size,
+        z_normalize_features=id_z_normalize_features,
+        shuffle=bool(test_config.shuffle),
+        drop_last=bool(test_config.drop_last),
+        num_workers=dataset_config.num_workers)
 
     ood_batch_size = ood_dataset_config.batch_size
     ood_shuffle = bool(ood_dataset_config.shuffle)
     ood_drop_last = bool(ood_dataset_config.drop_last)
     ood_num_workers = ood_dataset_config.num_workers
-    ood_dataloader_dict = {}
-
-    if 'val' in ood_dataset_config.split_names:
-        ood_dataloader_dict['val'] = id_train_dataloader_dict['ood_val']
 
     for split in set(ood_dataset_config.split_names) - {'val'}:
         ood_dataloader_dict[split] = {}

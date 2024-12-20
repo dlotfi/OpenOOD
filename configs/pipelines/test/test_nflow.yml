@@ -10,6 +10,7 @@ dataset:
   # the cached features instead of extracting them from the raw inputs
   feat_root: ''
   z_normalize_feat: False
+
 ood_dataset:
   # cached features extracted from classifier, if specified, the pipeline will use
   # the cached features instead of extracting them from the raw inputs

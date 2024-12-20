@@ -4,25 +4,26 @@ import numpy as np
 import torch
 from torch import nn
 
-from openood.datasets import get_dataloader, get_ood_dataloader
+from openood.datasets import (get_dataloader, get_ood_dataloader,
+                              get_feature_nflow_test_dataloaders)
 from openood.evaluators import get_evaluator
 from openood.networks import get_network
 from openood.utils import setup_logger
 
 
-class FullBackBoneNormalizingFlowNet(nn.Module):
+class FullNormalizingFlowNet(nn.Module):
     def __init__(self, net):
-        super(FullBackBoneNormalizingFlowNet, self).__init__()
-        self.backbone = net['backbone']
+        super(FullNormalizingFlowNet, self).__init__()
         self.feat_agg = net.get('feat_agg', nn.Identity())
         self.nflow = net['nflow']
 
     def forward(self, x, return_feature=False):
         if not return_feature:
             raise ValueError('return_feature must be True')
-        logits_cls, backbone_features = self.backbone(x, return_feature=True)
-        feats = self.feat_agg(backbone_features.flatten(1))
-        return logits_cls, self.nflow.inverse(feats)
+        logits_cls = torch.ones_like(x)  # dummy predictions
+        feats = self.feat_agg(x.flatten(1))
+        nflow_feats = self.nflow.inverse(feats)
+        return logits_cls, nflow_feats
 
 
 class FeatExtractNormalizingFlowPipeline:
@@ -50,27 +51,42 @@ class FeatExtractNormalizingFlowPipeline:
         evaluator.extract(net, ood_loader_dict['val'], 'ood_val')
         print('\nComplete Feature Extraction!')
 
-    def extract_features_test(self, net, evaluator, id_loader_dict,
-                              ood_loader_dict):
-        full_net = FullBackBoneNormalizingFlowNet(net)
+    def extract_backbone_features_test(self, net, evaluator, id_loader_dict,
+                                       ood_loader_dict):
+        backbone = net if 'backbone' not in net else net['backbone']
         # start extracting features
-        print('\nStart Feature Extraction...', flush=True)
+        print('\nStart Backbone Feature Extraction...', flush=True)
         print('\t ID test data...')
-        evaluator.extract(full_net.backbone, id_loader_dict['test'],
+        evaluator.extract(backbone, id_loader_dict['test'],
                           self.config.dataset.name)
-        evaluator.extract(full_net, id_loader_dict['test'],
-                          f'{self.config.dataset.name}_flow')
         if 'csid' in ood_loader_dict:
             for dataset_name, csid_dl in ood_loader_dict['csid'].items():
                 print(f'\t CSID {dataset_name} data...')
-                evaluator.extract(full_net.backbone, csid_dl, dataset_name)
-                evaluator.extract(full_net, csid_dl, f'{dataset_name}_flow')
+                evaluator.extract(backbone, csid_dl, dataset_name)
         split_types = ood_loader_dict.keys() - {'csid', 'val'}
         for ood_split in split_types:
             for dataset_name, ood_dl in ood_loader_dict[ood_split].items():
                 print(f'\t {ood_split.upper()} {dataset_name} data...')
-                evaluator.extract(full_net.backbone, ood_dl, dataset_name)
-                evaluator.extract(full_net, ood_dl, f'{dataset_name}_flow')
+                evaluator.extract(backbone, ood_dl, dataset_name)
+        print('\nComplete Backbone Feature Extraction!')
+
+    def extract_nflow_features_test(self, net, evaluator, id_loader_dict,
+                                    ood_loader_dict):
+        full_nflow = FullNormalizingFlowNet(net)
+        # start extracting features
+        print('\nStart Flow Feature Extraction...', flush=True)
+        print('\t ID test data...')
+        evaluator.extract(full_nflow, id_loader_dict['test'],
+                          f'{self.config.dataset.name}_flow')
+        if 'csid' in ood_loader_dict:
+            for dataset_name, csid_dl in ood_loader_dict['csid'].items():
+                print(f'\t CSID {dataset_name} data...')
+                evaluator.extract(full_nflow, csid_dl, f'{dataset_name}_flow')
+        split_types = ood_loader_dict.keys() - {'csid', 'val'}
+        for ood_split in split_types:
+            for dataset_name, ood_dl in ood_loader_dict[ood_split].items():
+                print(f'\t {ood_split.upper()} {dataset_name} data...')
+                evaluator.extract(full_nflow, ood_dl, f'{dataset_name}_flow')
         print('\nComplete Feature Extraction!')
 
     def run(self):
@@ -105,8 +121,16 @@ class FeatExtractNormalizingFlowPipeline:
         evaluator = get_evaluator(self.config)
 
         if self.config.pipeline.extract_target == 'test':
-            self.extract_features_test(net, evaluator, id_loader_dict,
-                                       ood_loader_dict)
+            self.extract_backbone_features_test(net, evaluator, id_loader_dict,
+                                                ood_loader_dict)
+            self.config.ood_dataset.feat_root = self.config.output_dir
+            id_loader_dict, ood_loader_dict = \
+                get_feature_nflow_test_dataloaders(
+                    dataset_config=self.config.dataset,
+                    ood_dataset_config=self.config.ood_dataset,
+                    load_train_val=False)
+            self.extract_nflow_features_test(net, evaluator, id_loader_dict,
+                                             ood_loader_dict)
         else:
             self.extract_features_train_val(net, evaluator, id_loader_dict,
                                             ood_loader_dict)

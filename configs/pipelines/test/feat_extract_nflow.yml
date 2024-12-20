@@ -10,6 +10,12 @@ num_workers: 8
 num_machines: 1
 machine_rank: 0
 
+dataset:
+  z_normalize_feat: False
+
+ood_dataset:
+  z_normalize_feat: False
+
 network:
   pretrained: True
   checkpoint: ["./results/cifar10_nflow_nflow_e100_lr0.0001_default/s0/best_nflow.ckpt",
