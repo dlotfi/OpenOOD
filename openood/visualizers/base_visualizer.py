@@ -155,18 +155,43 @@ class BaseVisualizer(ABC):
     def load_features(self,
                       filenames: List[str],
                       separate=False,
-                      l2_normalize=None):
+                      l2_normalize=False,
+                      z_normalize=False):
         feat_dir = self.config.visualizer.feat_dir
         feat_list = []
         for filename in filenames:
             feature_dict = np.load(os.path.join(feat_dir, filename))
             feats = feature_dict['feat_list']
-            if l2_normalize is not None:
+            print(f"Loaded '{filename}' feature size: {feats.shape}")
+            if z_normalize:
+                mean = np.mean(feats, axis=0)
+                std = np.std(feats, axis=0)
+                feats = (feats - mean) / (std + 1e-6)
+                print('Features have bean z-score normalized '
+                      'in each dimension')
+            if l2_normalize:
                 feats = sk_normalize(feats, norm='l2', axis=1)
+                print('Features have bean l2-normalized.')
             feat_list.append(feats)
         if not separate:
             feat_list = np.hstack(feat_list)
         return feat_list
+
+    @staticmethod
+    def get_title_and_file_suffix(l2_normalize_feat, z_normalize_feat):
+        title_suffixes = []
+        file_suffixes = []
+        if z_normalize_feat:
+            title_suffixes.append(' Z-Score Normalized')
+            file_suffixes.append('z')
+        if l2_normalize_feat:
+            title_suffixes.append(' L2-Normalized')
+            file_suffixes.append('l2')
+        title_suffix = ' &'.join(title_suffixes)
+        file_suffix = '_'.join(file_suffixes)
+        if file_suffix:
+            file_suffix = '_' + file_suffix + '_normalized'
+        return title_suffix, file_suffix
 
     @abstractmethod
     def draw(self):

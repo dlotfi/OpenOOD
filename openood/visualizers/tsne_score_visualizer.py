@@ -68,6 +68,7 @@ class TSNEScoreVisualizer(TSNEVisualizer):
     def plot_tsne_score(self):
         output_dir = self.config.output_dir
         l2_normalize_feat = self.plot_config.l2_normalize_feat
+        z_normalize_feat = self.plot_config.z_normalize_feat
         colored_id = self.plot_config.colored_id
         log_scale = self.plot_config.log_scale
         n_samples = self.plot_config.n_samples
@@ -77,7 +78,8 @@ class TSNEScoreVisualizer(TSNEVisualizer):
         for split_name, dataset_list in self.datasets.items():
             feats = self.load_features([f'{d}.npz' for d in dataset_list],
                                        separate=True,
-                                       l2_normalize=l2_normalize_feat)
+                                       l2_normalize=l2_normalize_feat,
+                                       z_normalize=z_normalize_feat)
             scores = self.load_scores([f'{d}.npz' for d in dataset_list],
                                       separate=True)
             scores, feats = self.random_sample([scores, feats],
@@ -88,14 +90,11 @@ class TSNEScoreVisualizer(TSNEVisualizer):
             scores_dict[split_name] = scores
 
         print('Plotting t-SNE for features', flush=True)
-        if l2_normalize_feat:
-            title = 't-SNE for L2-Normalized Backbone Features of ' \
-                    'ID and OOD Samples'
-            output_path = os.path.join(output_dir,
-                                       'tsne_scores_l2_normalized.png')
-        else:
-            title = 't-SNE for Backbone Features of ID and OOD Samples'
-            output_path = os.path.join(output_dir, 'tsne_scores.png')
+        title_suffix, file_suffix = self.get_title_and_file_suffix(
+            l2_normalize_feat, z_normalize_feat)
+        title = f't-SNE for{title_suffix} Backbone Features of ' \
+                'ID and OOD Samples'
+        output_path = os.path.join(output_dir, f'tsne_scores{file_suffix}.png')
         self.draw_tsne_score_plot(feats_dict, scores_dict, title, output_path,
                                   colored_id, log_scale, self.id_splits,
                                   self.get_label)
@@ -103,6 +102,7 @@ class TSNEScoreVisualizer(TSNEVisualizer):
     def plot_tsne_score_split(self):
         output_dir = os.path.join(self.config.output_dir, 'split_plots')
         l2_normalize_feat = self.plot_config.l2_normalize_feat
+        z_normalize_feat = self.plot_config.z_normalize_feat
         colored_id = self.plot_config.colored_id
         log_scale = self.plot_config.log_scale
         n_samples = self.plot_config.n_samples
@@ -120,7 +120,8 @@ class TSNEScoreVisualizer(TSNEVisualizer):
                 dataset = [dataset] if type(dataset) is not list else dataset
                 feats = self.load_features([f'{d}.npz' for d in dataset],
                                            separate=True,
-                                           l2_normalize=l2_normalize_feat)
+                                           l2_normalize=l2_normalize_feat,
+                                           z_normalize=z_normalize_feat)
                 scores = self.load_scores([f'{d}.npz' for d in dataset],
                                           separate=True)
                 scores, feats = self.random_sample([scores, feats],
@@ -143,18 +144,13 @@ class TSNEScoreVisualizer(TSNEVisualizer):
                 **id_scores_dict,
                 **scores_dict[split_name]
             }
-            if l2_normalize_feat:
-                title = 't-SNE for L2-Normalized Backbone Features with ' \
-                        f'Scores of ID and {split_name} Samples'
-                output_path = os.path.join(
-                    output_dir,
-                    f'tsne_features_l2_normalized_scores_{split_name}.png')
-            else:
-                title = 't-SNE for Backbone Features with Scores ' \
-                        f'of ID and {split_name} Samples'
-                output_path = os.path.join(
-                    output_dir, f'tsne_features_scores_{split_name}.png')
-
+            title_suffix, file_suffix = self.get_title_and_file_suffix(
+                l2_normalize_feat, z_normalize_feat)
+            title = f't-SNE for{title_suffix} Backbone Features with ' \
+                    f'Scores of ID and {split_name} Samples'
+            output_path = os.path.join(
+                output_dir,
+                f'tsne_features{file_suffix}_scores_{split_name}.png')
             self.draw_tsne_score_plot(combined_feats_dict,
                                       combined_scores_dict, title, output_path,
                                       colored_id, log_scale, self.id_splits,

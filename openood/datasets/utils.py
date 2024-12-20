@@ -256,8 +256,7 @@ def _get_feat_loader(feat_root: str, filename: str, batch_size: int,
         mean = total_feat.mean(dim=0)
         std = total_feat.std(dim=0)
         total_feat = (total_feat - mean) / (std + 1e-6)
-        print('Features have bean z-score normalized '
-              'separately in each dimension')
+        print('Features have bean z-score normalized ' 'in each dimension')
 
     dataset = FeatDataset(feat=total_feat, labels=total_labels)
     dataloader = DataLoader(dataset,

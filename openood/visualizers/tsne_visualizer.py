@@ -108,32 +108,33 @@ class TSNEVisualizer(BaseVisualizer):
     def plot_tsne(self):
         output_dir = self.config.output_dir
         l2_normalize_feat = self.plot_config.l2_normalize_feat
+        z_normalize_feat = self.plot_config.z_normalize_feat
         n_samples = self.plot_config.n_samples
 
         feats_dict = {}
         for split_name, dataset_list in self.datasets.items():
             feats = self.load_features([f'{d}.npz' for d in dataset_list],
                                        separate=True,
-                                       l2_normalize=l2_normalize_feat)
+                                       l2_normalize=l2_normalize_feat,
+                                       z_normalize=z_normalize_feat)
             feats = self.random_sample([feats],
                                        array_names=dataset_list,
                                        n_samples=n_samples)
             feats_dict[split_name] = feats
 
         print('Plotting t-SNE for features of the backbone', flush=True)
-        if l2_normalize_feat:
-            title = 't-SNE for L2-Normalized Backbone ' \
-                    'Features of ID and OOD Samples'
-            output_path = os.path.join(output_dir,
-                                       'tsne_features_l2_normalized.png')
-        else:
-            title = 't-SNE for Backbone Features of ID and OOD Samples'
-            output_path = os.path.join(output_dir, 'tsne_features.png')
+        title_suffix, file_suffix = self.get_title_and_file_suffix(
+            l2_normalize_feat, z_normalize_feat)
+        title = f't-SNE for{title_suffix} Backbone ' \
+                'Features of ID and OOD Samples'
+        output_path = os.path.join(output_dir,
+                                   f'tsne_features{file_suffix}.png')
         self.draw_tsne_plot(feats_dict, title, output_path, self.get_label)
 
     def plot_tsne_split(self):
         output_dir = os.path.join(self.config.output_dir, 'split_plots')
         l2_normalize_feat = self.plot_config.l2_normalize_feat
+        z_normalize_feat = self.plot_config.z_normalize_feat
         n_samples = self.plot_config.n_samples
 
         os.makedirs(output_dir, exist_ok=True)
@@ -147,7 +148,8 @@ class TSNEVisualizer(BaseVisualizer):
                 dataset = [dataset] if type(dataset) is not list else dataset
                 feats = self.load_features([f'{d}.npz' for d in dataset],
                                            separate=True,
-                                           l2_normalize=l2_normalize_feat)
+                                           l2_normalize=l2_normalize_feat,
+                                           z_normalize=z_normalize_feat)
                 feats = self.random_sample([feats],
                                            array_names=dataset,
                                            n_samples=n_samples)
@@ -160,17 +162,12 @@ class TSNEVisualizer(BaseVisualizer):
         for split_name, datasets_feats in feats_dict.items():
             print(f'Plotting t-SNE for {split_name}', flush=True)
             combined_feats_dict = {**id_feats_dict, **datasets_feats}
-            if l2_normalize_feat:
-                title = 't-SNE for L2-Normalized Backbone Features of ' \
-                        f'ID and {split_name} Samples'
-                output_path = os.path.join(
-                    output_dir,
-                    f'tsne_features_l2_normalized_{split_name}.png')
-            else:
-                title = 't-SNE for Backbone Features of ' \
-                        f'ID and {split_name} Samples'
-                output_path = os.path.join(output_dir,
-                                           f'tsne_features_{split_name}.png')
+            title_suffix, file_suffix = self.get_title_and_file_suffix(
+                l2_normalize_feat, z_normalize_feat)
+            title = f't-SNE for{title_suffix} Backbone Features of ' \
+                    f'ID and {split_name} Samples'
+            output_path = os.path.join(
+                output_dir, f'tsne_features{file_suffix}_{split_name}.png')
             self.draw_tsne_plot(combined_feats_dict, title, output_path,
                                 self.get_dataset_label)
 
