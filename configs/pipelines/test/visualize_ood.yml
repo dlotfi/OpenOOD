@@ -26,7 +26,7 @@ visualizer:
     score_log_scale: False  # log-scale the score values in the plot
     score_outlier_removal:
       method: auto  # choices: [auto, zscore, iqr, mad, range]
-      keep_range: none  # range to keep the scores. only used when method is 'range'
+      keep_range: [-inf, inf]  # range to keep the scores. only used when method is 'range'
       sigma: 3
       keep_ratio_threshold: 0.5
   tsne:
@@ -42,6 +42,6 @@ visualizer:
     n_samples: 1000
     score_outlier_removal:
       method: auto
-      keep_range: none
+      keep_range: [-inf, inf]
       sigma: 3
       keep_ratio_threshold: 0.5
