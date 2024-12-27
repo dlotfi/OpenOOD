@@ -26,7 +26,7 @@ python main.py \
     configs/datasets/medmnist/organamnist_ood.yml \
     configs/pipelines/test/visualize_nflow_ood.yml \
     --visualizer.ood_scheme ood \
-    --visualizer.score_dir "./results/organamnist_nflow_test_ood_ood_nflow_${MARK}/s${SEED}/ood/scores" \
+    --visualizer.score_dir "./results/organamnist_nflow_test_nflow_ood_nflow_${MARK}/s${SEED}/ood/scores" \
     --visualizer.feat_dir "./results/organamnist_nflow_feat_extract_nflow_${MARK}/s${SEED}" \
     --visualizer.ood_splits nearood farood \
     --visualizer.spectrum.types aggregate split \

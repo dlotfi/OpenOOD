@@ -11,6 +11,7 @@ python main.py \
     configs/networks/nflow_resnet3d_18_feat_concat.yml \
     configs/pipelines/test/feat_extract_nflow.yml \
     configs/preprocessors/med3d_preprocessor.yml \
+    --pipeline.extract_nflow False \
     --network.pretrained True \
     --network.checkpoint "./results/brats20_t1_nflow_nflow_e100_lr0.0001_${MARK}/s${SEED}/best_nflow.ckpt" None \
     --network.backbone.pretrained False \
