@@ -28,7 +28,7 @@ class SpectrumVisualizer(BaseVisualizer):
 
     def plot_spectrum(self):
         output_dir = self.config.output_dir
-        log_scale = self.plot_config.log_scale
+        log_scale = self.plot_config.score_log_scale
         n_bins = self.plot_config.n_bins
 
         scores_dict = {}
@@ -45,7 +45,7 @@ class SpectrumVisualizer(BaseVisualizer):
 
     def plot_spectrum_split(self):
         output_dir = os.path.join(self.config.output_dir, 'split_plots')
-        log_scale = self.plot_config.log_scale
+        log_scale = self.plot_config.score_log_scale
         n_bins = self.plot_config.n_bins
 
         os.makedirs(output_dir, exist_ok=True)

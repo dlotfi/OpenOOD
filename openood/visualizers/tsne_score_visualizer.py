@@ -70,7 +70,7 @@ class TSNEScoreVisualizer(TSNEVisualizer):
         l2_normalize_feat = self.plot_config.l2_normalize_feat
         z_normalize_feat = self.plot_config.z_normalize_feat
         colored_id = self.plot_config.colored_id
-        log_scale = self.plot_config.log_scale
+        log_scale = self.plot_config.score_log_scale
         n_samples = self.plot_config.n_samples
 
         feats_dict = {}
@@ -104,7 +104,7 @@ class TSNEScoreVisualizer(TSNEVisualizer):
         l2_normalize_feat = self.plot_config.l2_normalize_feat
         z_normalize_feat = self.plot_config.z_normalize_feat
         colored_id = self.plot_config.colored_id
-        log_scale = self.plot_config.log_scale
+        log_scale = self.plot_config.score_log_scale
         n_samples = self.plot_config.n_samples
 
         os.makedirs(output_dir, exist_ok=True)

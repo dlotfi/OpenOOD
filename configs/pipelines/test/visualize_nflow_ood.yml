@@ -38,6 +38,7 @@ visualizer:
     types: [aggregate]
     z_normalize_feat: False
     l2_normalize_feat: True
+    colored_id: False
     score_log_scale: False
     n_samples: 1000
     score_outlier_removal:
