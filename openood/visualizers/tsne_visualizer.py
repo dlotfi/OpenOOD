@@ -8,7 +8,7 @@ from sklearn.manifold import TSNE
 from sklearn.preprocessing import StandardScaler
 from typing import List, Dict, Callable
 from .base_visualizer import BaseVisualizer
-from .vis_comm import safe_plt_str
+plt.style.use(['seaborn-v0_8-white'])
 
 
 class TSNEVisualizer(BaseVisualizer):
@@ -99,10 +99,10 @@ class TSNEVisualizer(BaseVisualizer):
                         tsne_feats[:, 1],
                         s=10,
                         alpha=0.5,
-                        label=safe_plt_str(label_fn(key)))
+                        label=label_fn(key))
         plt.axis('off')
         plt.legend(loc='upper left', fontsize='small')
-        plt.title(safe_plt_str(title))
+        plt.title(title)
         plt.savefig(output_path, bbox_inches='tight')
 
     def plot_tsne(self):
@@ -172,9 +172,9 @@ class TSNEVisualizer(BaseVisualizer):
                                 self.get_dataset_label)
 
     def draw(self):
-        if 'aggregate' in self.plot_config.types:
-            print(f'\n{" Aggregate ":-^50}', flush=True)
+        if 'all' in self.plot_config.types:
+            print(f'\n{" Overall ":-^50}', flush=True)
             self.plot_tsne()
-        if 'split' in self.plot_config.types:
+        if 'splits' in self.plot_config.types:
             print(f'\n{" Split ":-^50}', flush=True)
             self.plot_tsne_split()

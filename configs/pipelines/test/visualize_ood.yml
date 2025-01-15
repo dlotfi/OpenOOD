@@ -21,7 +21,7 @@ visualizer:
 
   plots: [spectrum, tsne, tsne_score]
   spectrum:
-    types: [aggregate]  # how to plot OODs against ID (and CS-ID) choices: [aggregate, split]
+    types: [all]  # how to plot OODs against ID (and CS-ID) choices: [all, splits]
     n_bins: 500 # number of bins for the histogram
     score_log_scale: False  # log-scale the score values in the plot
     score_outlier_removal:
@@ -30,12 +30,12 @@ visualizer:
       sigma: 3
       keep_ratio_threshold: 0.5
   tsne:
-    types: [aggregate]
+    types: [all]
     z_normalize_feat: False  # z-normalize features before t-SNE
     l2_normalize_feat: True  # l2-normalize features before t-SNE
     n_samples: 1000
   tsne_score:
-    types: [aggregate]
+    types: [all]
     z_normalize_feat: False
     l2_normalize_feat: True
     colored_id: False

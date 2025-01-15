@@ -30,10 +30,13 @@ python main.py \
     --visualizer.score_dir "./results/organamnist_nflow_test_nflow_ood_nflow_${MARK1}${MARK2}/s${SEED}/ood/scores" \
     --visualizer.feat_dir "./results/organamnist_nflow_feat_extract_nflow_${MARK1}/s${SEED}" \
     --visualizer.ood_splits nearood farood \
-    --visualizer.spectrum.types aggregate split \
-    --visualizer.tsne.types aggregate split \
+    --visualizer.spectrum.types all splits \
+    --visualizer.spectrum.score_log_scale False \
+    --visualizer.spectrum.score_outlier_removal.method range \
+    --visualizer.spectrum.score_outlier_removal.keep_range -1000 inf \
+    --visualizer.tsne.types all splits \
     --visualizer.tsne.z_normalize_feat False \
-    --visualizer.tsne_score.types aggregate split \
+    --visualizer.tsne_score.types all splits \
     --visualizer.tsne_score.z_normalize_feat False \
     --seed ${SEED} \
     --mark ${MARK1}${MARK2}

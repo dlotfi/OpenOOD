@@ -3,7 +3,7 @@ from scipy.stats import norm, rankdata
 from sklearn.metrics import roc_auc_score
 
 from .base_analyzer import BaseAnalyzer
-from ..utils import Config
+from openood.utils import Config
 
 
 class DelongsTest(BaseAnalyzer):
@@ -18,8 +18,9 @@ class DelongsTest(BaseAnalyzer):
             raise ValueError(f"Unknown DeLong's test method: {method}")
 
     def analyze(self, true_labels, model1_scores, model2_scores):
+        model_names = self.config.analyzer.model_names
         return self.delongs_test.analyze(true_labels, model1_scores,
-                                         model2_scores)
+                                         model2_scores, model_names)
 
 
 # based on: https://github.com/yandexdataschool/roc_comparison
@@ -124,7 +125,7 @@ class FastDelongsTest:
         label_1_count = int(ground_truth.sum())
         return order, label_1_count
 
-    def analyze(self, true_labels, model1_scores, model2_scores):
+    def analyze(self, true_labels, model1_scores, model2_scores, model_names):
         # Compute AUC for both models
         auc_model1 = roc_auc_score(true_labels, model1_scores)
         auc_model2 = roc_auc_score(true_labels, model2_scores)
@@ -140,8 +141,8 @@ class FastDelongsTest:
         p_value = 10**log10_p_value
 
         return {
-            'Model1 AUROC': auc_model1,
-            'Model2 AUROC': auc_model2,
+            f'{model_names[0]} AUROC': auc_model1,
+            f'{model_names[1]} AUROC': auc_model2,
             'log10(P-Value)': log10_p_value,
             'P-Value': p_value
         }
@@ -209,7 +210,7 @@ class SimpleDelongsTest:
 
         return np.array([[var_auc1, cov_auc1_auc2], [cov_auc1_auc2, var_auc2]])
 
-    def analyze(self, labels, scores1, scores2):
+    def analyze(self, labels, scores1, scores2, model_names):
         """Perform DeLong's test to compare the AUCs of two models."""
         # Compute AUCs using rank-based Mann-Whitney statistic
         auc1 = self.compute_auc(scores1, labels)
@@ -238,8 +239,8 @@ class SimpleDelongsTest:
         # p_value = 2 * (1 - norm.cdf(np.abs(z)))
 
         return {
-            'Model1 AUROC': auc1,
-            'Model2 AUROC': auc2,
+            f'{model_names[0]} AUROC': auc1,
+            f'{model_names[1]} AUROC': auc2,
             'log10(P-Value)': log10_p_value.item(),
             'P-Value': p_value
         }

@@ -32,11 +32,8 @@ class BaseVisualizer(ABC):
             'csid': 'Covariate-Shift ID',
             'id': 'ID'
         }
-        if split_name in labels:
-            label = labels[split_name]
-        else:
-            # split by '_' and capitalize each word
-            label = ' '.join([w.capitalize() for w in split_name.split('_')])
+        label = labels[split_name] if split_name in labels else \
+            ' '.join([w.capitalize() for w in split_name.split('_')])
         if split_name in self.datasets:
             dataset_names = ', '.join(self.datasets[split_name])
             if len(dataset_names) + len(label) > max_length:

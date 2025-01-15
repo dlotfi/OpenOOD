@@ -14,5 +14,7 @@ python main.py \
     --analyzer.model1_score_dir "./results/brats20_t1_nflow_test_nflow_ood_nflow_${MARK}/s${SEED}/fsood/scores" \
     --analyzer.model2_score_dir "./results/brats20_t1_resnet3d_18_test_ood_ood_${METHOD}_default/s${SEED}/fsood/scores" \
     --analyzer.ood_splits transformation_shift population_shift modality_shift diagnostic_shift organ_shift \
+    --analyzer.model_names Ours ${METHOD^^} \
+    --analyzer.bootstrapping.types all splits datasets \
     --seed ${SEED} \
     --mark ${MARK}_${METHOD}

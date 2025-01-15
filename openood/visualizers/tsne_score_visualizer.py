@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 from typing import Callable
 from .tsne_visualizer import TSNEVisualizer
-from .vis_comm import safe_plt_str
+plt.style.use(['seaborn-v0_8-white'])
 
 
 class TSNEScoreVisualizer(TSNEVisualizer):
@@ -44,7 +44,7 @@ class TSNEScoreVisualizer(TSNEVisualizer):
                             s=10,
                             alpha=0.2,
                             marker=marker,
-                            label=safe_plt_str(label_fn(key)),
+                            label=label_fn(key),
                             c='grey')
             else:
                 plt.scatter(tsne_feats[:, 0],
@@ -52,7 +52,7 @@ class TSNEScoreVisualizer(TSNEVisualizer):
                             s=10,
                             alpha=0.5,
                             marker=marker,
-                            label=safe_plt_str(label_fn(key)),
+                            label=label_fn(key),
                             c=scores,
                             cmap=cmap,
                             norm=norm)
@@ -62,7 +62,7 @@ class TSNEScoreVisualizer(TSNEVisualizer):
         legend = plt.legend(loc='upper left', fontsize='small')
         for handle in legend.legend_handles:
             handle.set_color('black')
-        plt.title(safe_plt_str(title))
+        plt.title(title)
         plt.savefig(output_path, bbox_inches='tight')
 
     def plot_tsne_score(self):
@@ -157,9 +157,9 @@ class TSNEScoreVisualizer(TSNEVisualizer):
                                       self.get_dataset_label)
 
     def draw(self):
-        if 'aggregate' in self.plot_config.types:
-            print(f'\n{" Aggregate ":-^50}', flush=True)
+        if 'all' in self.plot_config.types:
+            print(f'\n{" Overall ":-^50}', flush=True)
             self.plot_tsne_score()
-        if 'split' in self.plot_config.types:
+        if 'splits' in self.plot_config.types:
             print(f'\n{" Split ":-^50}', flush=True)
             self.plot_tsne_score_split()

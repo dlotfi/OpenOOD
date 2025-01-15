@@ -18,12 +18,14 @@ analyzer:
   model2_score_dir: ./results/organamnist_resnet18_28x28_test_ood_ood_vim_8/s0/ood/scores
   ood_splits: [nearood, farood]
   ood_scheme: ood
+  model_names: [Model1, Model2]
 
   analyzers: [delong, bootstrapping]
   delong:
-    types: [aggregate]  # how to analyze OODs against ID (and CS-ID) choices: [aggregate, split]
+    types: [all]  # how to evaluate OODs against ID (and CS-ID) choices: [all, splits, datasets]
     method: fast
   bootstrapping:
-    types: [aggregate]
+    types: [all]
     n_bootstraps: 1000  # number of bootstrap iterations
     confidence_level: 0.95  # confidence level for the confidence interval
+    box_plot: True  # plot the box plot of the bootstrapped scores

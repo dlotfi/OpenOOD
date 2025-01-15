@@ -4,7 +4,7 @@ from typing import Callable
 import numpy as np
 import matplotlib.pyplot as plt
 from .base_visualizer import BaseVisualizer
-from .vis_comm import safe_plt_str
+plt.style.use(['seaborn-v0_8-white'])
 
 
 class SpectrumVisualizer(BaseVisualizer):
@@ -18,11 +18,11 @@ class SpectrumVisualizer(BaseVisualizer):
                      density=True,
                      weights=np.ones(len(scores)) / len(scores),
                      alpha=0.5,
-                     label=safe_plt_str(label_fn(key)),
+                     label=label_fn(key),
                      log=log_scale)
         plt.yticks([])
         plt.legend(loc='upper left', fontsize='small')
-        plt.title(safe_plt_str(title))
+        plt.title(title)
         plt.savefig(output_path, bbox_inches='tight')
         plt.close()
 
@@ -76,9 +76,9 @@ class SpectrumVisualizer(BaseVisualizer):
                 n_bins, self.get_dataset_label)
 
     def draw(self):
-        if 'aggregate' in self.plot_config.types:
-            print(f'\n{" Aggregate ":-^50}', flush=True)
+        if 'all' in self.plot_config.types:
+            print(f'\n{" Overall ":-^50}', flush=True)
             self.plot_spectrum()
-        if 'split' in self.plot_config.types:
+        if 'splits' in self.plot_config.types:
             print(f'\n{" Split ":-^50}', flush=True)
             self.plot_spectrum_split()
