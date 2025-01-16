@@ -35,9 +35,9 @@ class TSNEFlowVisualizer(TSNEVisualizer):
         title = f't-SNE for{title_suffix} Backbone Features of ' \
                 'ID and OOD Samples'
         output_path = os.path.join(output_dir,
-                                   f'tsne_features{file_suffix}.png')
+                                   f'tsne_features{file_suffix}.svg')
         self.draw_tsne_plot(feats_dict, title, output_path, self.get_label)
         self.draw_tsne_plot(
             feats_flow_dict,
             't-SNE for Normalizing Flow Features of ID and OOD Samples',
-            os.path.join(output_dir, 'tsne_features_flow.png'), self.get_label)
+            os.path.join(output_dir, 'tsne_features_flow.svg'), self.get_label)

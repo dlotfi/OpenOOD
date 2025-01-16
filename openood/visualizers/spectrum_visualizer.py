@@ -4,7 +4,7 @@ from typing import Callable
 import numpy as np
 import matplotlib.pyplot as plt
 from .base_visualizer import BaseVisualizer
-plt.style.use(['seaborn-v0_8-white'])
+from openood.utils.vis_comm import save_fig_and_close
 
 
 class SpectrumVisualizer(BaseVisualizer):
@@ -23,8 +23,7 @@ class SpectrumVisualizer(BaseVisualizer):
         plt.yticks([])
         plt.legend(loc='upper left', fontsize='small')
         plt.title(title)
-        plt.savefig(output_path, bbox_inches='tight')
-        plt.close()
+        save_fig_and_close(output_path)
 
     def plot_spectrum(self):
         output_dir = self.config.output_dir
@@ -39,7 +38,7 @@ class SpectrumVisualizer(BaseVisualizer):
 
         print('Plotting histogram of log-likelihood', flush=True)
         self.draw_histogram(scores_dict,
-                            os.path.join(output_dir, 'spectrum.png'),
+                            os.path.join(output_dir, 'spectrum.svg'),
                             'Log-Likelihood for ID and OOD Samples', log_scale,
                             n_bins, self.get_label)
 
@@ -71,7 +70,7 @@ class SpectrumVisualizer(BaseVisualizer):
             combined_scores_dict = {**id_scores_dict, **datasets_scores}
             self.draw_histogram(
                 combined_scores_dict,
-                os.path.join(output_dir, f'spectrum_{split_name}.png'),
+                os.path.join(output_dir, f'spectrum_{split_name}.svg'),
                 f'Log-Likelihood for ID and {split_name} Samples', log_scale,
                 n_bins, self.get_dataset_label)
 

@@ -8,7 +8,7 @@ from sklearn.manifold import TSNE
 from sklearn.preprocessing import StandardScaler
 from typing import List, Dict, Callable
 from .base_visualizer import BaseVisualizer
-plt.style.use(['seaborn-v0_8-white'])
+from openood.utils.vis_comm import save_fig_and_close
 
 
 class TSNEVisualizer(BaseVisualizer):
@@ -103,7 +103,7 @@ class TSNEVisualizer(BaseVisualizer):
         plt.axis('off')
         plt.legend(loc='upper left', fontsize='small')
         plt.title(title)
-        plt.savefig(output_path, bbox_inches='tight')
+        save_fig_and_close(output_path)
 
     def plot_tsne(self):
         output_dir = self.config.output_dir
@@ -128,7 +128,7 @@ class TSNEVisualizer(BaseVisualizer):
         title = f't-SNE for{title_suffix} Backbone ' \
                 'Features of ID and OOD Samples'
         output_path = os.path.join(output_dir,
-                                   f'tsne_features{file_suffix}.png')
+                                   f'tsne_features{file_suffix}.svg')
         self.draw_tsne_plot(feats_dict, title, output_path, self.get_label)
 
     def plot_tsne_split(self):
@@ -167,7 +167,7 @@ class TSNEVisualizer(BaseVisualizer):
             title = f't-SNE for{title_suffix} Backbone Features of ' \
                     f'ID and {split_name} Samples'
             output_path = os.path.join(
-                output_dir, f'tsne_features{file_suffix}_{split_name}.png')
+                output_dir, f'tsne_features{file_suffix}_{split_name}.svg')
             self.draw_tsne_plot(combined_feats_dict, title, output_path,
                                 self.get_dataset_label)
 

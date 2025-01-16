@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 from typing import Callable
 from .tsne_visualizer import TSNEVisualizer
-plt.style.use(['seaborn-v0_8-white'])
+from openood.utils.vis_comm import save_fig_and_close
 
 
 class TSNEScoreVisualizer(TSNEVisualizer):
@@ -63,7 +63,7 @@ class TSNEScoreVisualizer(TSNEVisualizer):
         for handle in legend.legend_handles:
             handle.set_color('black')
         plt.title(title)
-        plt.savefig(output_path, bbox_inches='tight')
+        save_fig_and_close(output_path)
 
     def plot_tsne_score(self):
         output_dir = self.config.output_dir
@@ -94,7 +94,7 @@ class TSNEScoreVisualizer(TSNEVisualizer):
             l2_normalize_feat, z_normalize_feat)
         title = f't-SNE for{title_suffix} Backbone Features of ' \
                 'ID and OOD Samples'
-        output_path = os.path.join(output_dir, f'tsne_scores{file_suffix}.png')
+        output_path = os.path.join(output_dir, f'tsne_scores{file_suffix}.svg')
         self.draw_tsne_score_plot(feats_dict, scores_dict, title, output_path,
                                   colored_id, log_scale, self.id_splits,
                                   self.get_label)
@@ -150,7 +150,7 @@ class TSNEScoreVisualizer(TSNEVisualizer):
                     f'Scores of ID and {split_name} Samples'
             output_path = os.path.join(
                 output_dir,
-                f'tsne_features{file_suffix}_scores_{split_name}.png')
+                f'tsne_features{file_suffix}_scores_{split_name}.svg')
             self.draw_tsne_score_plot(combined_feats_dict,
                                       combined_scores_dict, title, output_path,
                                       colored_id, log_scale, self.id_splits,

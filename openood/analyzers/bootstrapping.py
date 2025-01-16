@@ -9,7 +9,7 @@ from tqdm import tqdm
 
 from .base_analyzer import BaseAnalyzer
 from openood.evaluators.metrics import auc_and_fpr_recall
-plt.style.use(['seaborn-v0_8-white'])
+from openood.utils.vis_comm import save_fig_and_close
 
 
 class Bootstrapping(BaseAnalyzer):
@@ -125,7 +125,7 @@ class Bootstrapping(BaseAnalyzer):
         colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
         labels, label_weights = self._get_labels_n_weights(results)
         for metric in metrics:
-            output_path = os.path.join(output_dir, f'box_plot_{metric}.png')
+            output_path = os.path.join(output_dir, f'box_plot_{metric}.svg')
             model1_data = []
             model2_data = []
             for split, dataset, result in results:
@@ -172,5 +172,4 @@ class Bootstrapping(BaseAnalyzer):
                       alpha=0.6)
             ]
             ax.legend(handles=lgd_handles, loc='lower left', fontsize='small')
-            plt.savefig(output_path, bbox_inches='tight')
-            plt.close()
+            save_fig_and_close(output_path)
