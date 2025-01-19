@@ -1,4 +1,4 @@
-# MedOOD Dataset
+# MedOOD Datasets
 MedOOD is a comprehensive collection of medical datasets designed to benchmark and evaluate out-of-distribution (OOD)
 detection in the medical imaging domain. Building base on the [MedicOOD](https://github.com/benolmbrt/MedicOOD), MedOOD
 includes curated datasets from diverse medical imaging modalities, providing a robust foundation for developing and
@@ -6,42 +6,48 @@ testing OOD detection models in real-world healthcare scenarios.
 
 
 ## Installation
-
-#### Install requirements
+Create a Python 3.10+ environment and install the required packages:
 ```sh
 pip install -r requirements.txt
 ```
 
+## Preprocessing Datasets
 
-## Usage
-For preprocessing each dataset, you can run the following command:
+### Preprocessing scripts
+After downloading the official datasets, you can preprocess them using the provided scripts in [scripts folder](scripts). 
+
+
+Don't forget to change the paths in the `scripts/common_env.sh` file.
+
+### Scripts explanation
+This command can be used to preprocess each dataset:
 ```sh
 python preprocess_NAME_OF_DATASET.py --base_dir BASE_DIR --output_dir OUTPUT_DIR --num_samples NUM_SAMPLES --seed SEED [--skip_existing] [--use_gpu]
 ```
 
-### Arguments:
-- base_dir (str, required): Base directory of the dataset.
-- output_dir (str, required): Output directory of the processed data.
-- num_samples (int, optional): Number of samples to process. Default is None, which samples all available data.
-- seed (int, optional): Random seed for reproducibility. Default is None.
-- skip_existing (flag): Skip re-processing existing files.
-- use_gpu (flag): Use GPU for brain extraction. Only available for those pre-processing having the brain extraction step.
+#### Parameters:
+- **base_dir (str, required):** Base directory of the dataset.
+- **output_dir (str, required):** Output directory of the processed data.
+- **num_samples (int, optional):** Number of samples to process. Default is None, which samples all available data.
+- **seed (int, optional):** Random seed for reproducibility. Default is None.
+- **skip_existing (flag):** Skip re-processing existing files.
+- **use_gpu (flag):** Use GPU for brain extraction. Only available for those pre-processing having the brain extraction step.
 
-For generating transformation-shifted BraTS 2020 dataset, you can run the following command:
+The following command generates transformation-shifted BraTS 2020 dataset:
 ```sh
 python transform_brats20.py --base_dir BASE_DIR --output_dir OUTPUT_DIR --seed SEED
 ```
 
-For generating image list files for each processed dataset, you an run the following command:
+For generating image list files for each processed dataset, you can run the following command:
 ```sh
 python generate_imglist.py --input_dir INPUT_DIR --base_dir BASE_DIR --output_dir OUTPUT_DIR [--labels LABEL1 LABEL2 ...]
 ```
 
-### Arguments:
-- input_dir (str, required): Input directory of the processed data.
-- base_dir (str, required): Base directory of the dataset.
-- output_dir (str, required): Output directory for the generated image list files.
-- labels (str, optional): Labels to include in the image list. Multiple labels can be specified.
+#### Parameters:
+- **input_dir (str, required):** Input directory of the processed data.
+- **base_dir (str, required):** Base directory of the dataset.
+- **output_dir (str, required):** Output directory for the generated image list files.
+- **labels (str, optional):** Labels to include in the image list. Multiple labels can be specified.
 
 
 
@@ -59,9 +65,10 @@ anatomical template, resampling to an isotropic resolution of 1mm³, and skull-s
 We utilize only the [*Training*](https://www.cbica.upenn.edu/MICCAI_BraTS2020_TrainingData) split of this dataset, as
 only the training data include labels. This split contains 369 multimodal MRI scans: 293 HGG and 76 LGG.
 
-The T1-weighted MRIs serve as our in-distribution data, while the post-contrast T1-weighted and T2-FLAIR MRIs are used
-as modality-shift out-of-distribution data. Additionally, we generate a transformation-shifted out-of-distribution
-dataset by applying various transformations to the T1-weighted MRIs.
+The T1-weighted MRIs serve as our in-distribution (ID) data, while the post-contrast T1-weighted and T2-FLAIR MRIs are 
+used as modality-shift out-of-distribution (OOD) data. Additionally, we generate a transformation-shifted OOD dataset by 
+applying various transformations to the T1-weighted MRIs. The T2-weighted MRIs are reserved for use as validation data
+during the training of the OOD detection model.
 
 
 ### LUMIERE
@@ -87,7 +94,7 @@ labels provided for the training cohort. Tumors were segmented into key subregio
 non-enhancing tumor (NET), cystic components (CC), and peritumoral edema (ED), supporting automated segmentation
 algorithm development in pediatric neuro-oncology.
 
-We use the T1-weighted MRIs as a population-shift out-of-distribution dataset.
+We use the T1-weighted MRIs as a population-shift OOD dataset.
 
 ### BraTS 2023 - Sub-Sahara-Africa
 The BraTS 2023 Sub-Saharan Africa ([BraTS-SSA 2023](https://www.synapse.org/Synapse:syn51514109)) dataset is a publicly
@@ -98,7 +105,7 @@ segmentations, including enhancing tumor, non-enhancing tumor core, and surround
 by radiology experts following automated pre-segmentation. It follows the BraTS 2020 pre-processing pipeline: NIfTI
 conversion, common anatomical template co-registration, 1mm³ isotropic resampling, and skull-stripping.
 
-We use the T1-weighted MRIs as a population-shift out-of-distribution dataset.
+We use the T1-weighted MRIs as a population-shift OOD dataset.
 
 ### WMH 2017
 The [WMH 2017](https://dataverse.nl/dataset.xhtml?persistentId=doi:10.34894/AECRSD) dataset, used for the White Matter Hyperintensity (WMH) Segmentation Challenge, consists of brain MRI data
@@ -108,19 +115,19 @@ accompanied by manual expert annotations of WMH, provided as binary masks, and i
 align the T1 images to the FLAIR images.
 
 We use 3DT1 images, pre-processed with SPM12 r6685 to correct bias field inhomogeneities, as a diagnostic-shift
-out-of-distribution dataset.
+OOD dataset.
 
 Since the official download source may be unreliable, you can use [this torrent](https://academictorrents.com/details/a6d90ae5a9ff4cc8184f122048495fd6bd18d6ba)
 as an alternative for downloading the dataset.
 
-### ATLAS v2.0
-The [ATLAS v2.0](https://atlas.grand-challenge.org/Data/) dataset is a large, curated, open-source collection of
+### ATLAS R2.0
+The [ATLAS R2.0](https://atlas.grand-challenge.org/Data/) dataset is a large, curated, open-source collection of
 T1-weighted MRI scans and manually segmented stroke lesion masks, designed to improve automated lesion segmentation
 algorithms. It builds on the previous ATLAS v1.2 release by expanding the number of datasets from 304 to 955 cases,
 sourced from 33 research cohorts across 20 institutions worldwide, including a hidden test dataset for unbiased
 algorithm evaluation.
 
-We use T1-weighted MRIs from the ATLAS v2.0 dataset as a diagnostic-shift out-of-distribution dataset.
+We use T1-weighted MRIs from the ATLAS R2.0 dataset as a diagnostic-shift OOD dataset.
 
 ### EPISURG
 The [EPISURG](https://rdr.ucl.ac.uk/articles/dataset/9996158?file=26153588) dataset is a curated collection of brain MRI
@@ -129,7 +136,7 @@ Neurology and Neurosurgery (NHNN) in London, UK. It includes 269 preoperative an
 with 133 of the postoperative scans manually annotated by expert raters to segment the resection cavities.
 
 We use postoperative T1-weighted images where patients have a cavity in place of the epilepsy area as a diagnostic-shift
-out-of-distribution dataset.
+OOD dataset.
 
 ### IXI
 The [IXI](https://brain-development.org/ixi-dataset/) dataset comprises approximately 600 MRI scans from healthy
@@ -139,7 +146,7 @@ three London hospitals using different MRI systems: a Philips 3T at Hammersmith 
 Hospital, and a GE 1.5T at the Institute of Psychiatry. The images are available in NIfTI format, along with demographic
 information.
 
-We use T1-weighted MRIs from the IXI dataset as a diagnostic-shift out-of-distribution dataset.
+We use T1-weighted MRIs from the IXI dataset as a diagnostic-shift OOD dataset.
 
 ### CQ500
 The [CQ500](http://headctstudy.qure.ai/dataset) dataset consists of 491 non-contrast head CT scans collected from
@@ -150,7 +157,7 @@ effect. It was enriched for positive cases using a natural language processing (
 radiology reports, ensuring a significant number of scans with these abnormalities. The dataset was reviewed by three
 senior radiologists, and their majority consensus served as the gold standard for validation.
 
-We use the CT scans from the CQ500 dataset as a modality-shift out-of-distribution dataset.
+We use the CT scans from the CQ500 dataset as a modality-shift OOD dataset.
 
 ### CHAOS
 The [CHAOS](https://chaos.grand-challenge.org/Data/) (Combined Healthy Abdominal Organ Segmentation) dataset is composed
@@ -162,7 +169,7 @@ database contains 120 DICOM datasets from T1-DUAL (in-phase and out-phase) and T
 of 256x256 and an average of 36 slices per patient. The MRI data, acquired using a 1.5T Philips scanner, is designed to
 suppress fat and enhance the visibility of abdominal organs and their boundaries.
 
-We use the MRI T1-DUAL in-phase and out-phase images as a far organ-shift out-of-distribution dataset.
+We use the MRI T1-DUAL in-phase and out-phase images as an organ-shift OOD dataset.
 
 ### Lumbar Spine
 The [Lumbar Spine](https://data.mendeley.com/datasets/k57fr854j2/2) dataset consists of clinical lumbar MRI scans from
@@ -174,4 +181,56 @@ with the dataset comprising a total of 1704 axial slices focusing on the last th
 labeled into four regions of interest (RoIs): the Intervertebral Disc (IVD), Posterior Element (PE), Thecal Sac (TS),
 and the Area between Anterior and Posterior elements (AAP), which are crucial for detecting lumbar spinal stenosis.
 
-We use T1-weighted MRIs from the Lumbar Spine dataset as a far organ-shift out-of-distribution dataset.
+We use T1-weighted MRIs from the Lumbar Spine dataset as an organ-shift OOD dataset.
+
+## Citation
+
+If you use the MedOOD benchmark in your research, please cite this paper:
+
+```bibtex
+@article{lotfi2025medoodflow,
+  title={Enhancing Out-of-Distribution Detection in Medical Imaging with Normalizing Flows},
+  author={Dariush Lotfi and Mohammad-Ali Nikouei Mahani and Mohamad Koohi-Moghadam and Kyongtae Ty Bae},
+  journal={arXiv preprint arXiv:XXXX.XXXXX},
+  year={2025}
+}
+```
+
+We also recommend citing the individual datasets included in MedOOD:
+
+#### BraTS 2020
+[1] B. H. Menze et al., “The Multimodal Brain Tumor Image Segmentation Benchmark (BRATS),” IEEE Trans Med Imaging, vol. 34, no. 10, pp. 1993–2024, Oct. 2015, doi: 10.1109/TMI.2014.2377694
+
+[2] S. Bakas et al., “Advancing The Cancer Genome Atlas glioma MRI collections with expert segmentation labels and radiomic features,” Sci Data, vol. 4, Sep. 2017, doi: 10.1038/SDATA.2017.117
+
+[3] S. Bakas et al., “Identifying the Best Machine Learning Algorithms for Brain Tumor Segmentation, Progression Assessment, and Overall Survival Prediction in the BRATS Challenge,” Sandra Gonzlez-Vill, vol. 124, Nov. 2018, Accessed: Jan. 07, 2025. [Online]. Available: https://arxiv.org/abs/1811.02629v3
+
+#### LUMIERE
+[4] Y. Suter et al., “The LUMIERE dataset: Longitudinal Glioblastoma MRI with expert RANO evaluation,” Sci Data, vol. 9, no. 1, Dec. 2022, doi: 10.1038/S41597-022-01881-7
+
+#### BraTS 2023 - Pediatric Tumors
+[5] A. F. Kazerooni et al., “The Brain Tumor Segmentation (BraTS) Challenge 2023: Focus on Pediatrics (CBTN-CONNECT-DIPGR-ASNR-MICCAI BraTS-PEDs),” ArXiv, p. arXiv:2305.17033v7, May 2023, Accessed: Jan. 07, 2025. [Online]. Available: http://arxiv.org/abs/2305.17033 
+
+#### BraTS 2023 - Sub-Sahara-Africa
+[6] M. Adewole et al., “The Brain Tumor Segmentation (BraTS) Challenge 2023: Glioma Segmentation in Sub-Saharan Africa Patient Population (BraTS-Africa),” ArXiv, p. arXiv:2305.19369v1, May 2023, Accessed: Jan. 07, 2025. [Online]. Available: https://pmc.ncbi.nlm.nih.gov/articles/PMC10312814/ 
+
+#### CQ500
+[7] S. Chilamkurthy et al., “Development and Validation of Deep Learning Algorithms for Detection of Critical Findings in Head CT Scans,” Mar. 2018, Accessed: Jan. 07, 2025. [Online]. Available: https://arxiv.org/abs/1803.05854v2
+
+#### WMH 2017
+[8] H. J. Kuijf et al., “Standardized Assessment of Automatic Segmentation of White Matter Hyperintensities and Results of the WMH Segmentation Challenge,” IEEE Trans Med Imaging, vol. 38, no. 11, pp. 2556–2568, Nov. 2019, doi: 10.1109/TMI.2019.2905770
+
+#### ATLAS R2.0
+[9] S. L. Liew et al., “A large, curated, open-source stroke neuroimaging dataset to improve lesion segmentation algorithms,” Scientific Data 2022 9:1, vol. 9, no. 1, pp. 1–12, Jun. 2022, doi: 10.1038/s41597-022-01401-7
+
+#### EPISURG
+[10] F. Pérez-García, R. Rodionov, A. Alim-Marvasti, R. Sparks, J. S. Duncan, and S. Ourselin, “Simulation of Brain Resection for Cavity Segmentation Using Self-supervised and Semi-supervised Learning,” Lecture Notes in Computer Science (including subseries Lecture Notes in Artificial Intelligence and Lecture Notes in Bioinformatics), vol. 12263 LNCS, pp. 115–125, 2020, doi: 10.1007/978-3-030-59716-0_12
+
+#### IXI
+[11] “IXI Dataset – Brain Development.” Accessed: Jan. 07, 2025. [Online]. Available: https://brain-development.org/ixi-dataset/
+
+#### CHAOS
+[12] A. E. Kavur et al., “CHAOS Challenge - combined (CT-MR) healthy abdominal organ segmentation,” Med Image Anal, vol. 69, p. 101950, Apr. 2021, doi: 10.1016/J.MEDIA.2020.101950
+
+#### Lumbar Spine
+[13] F. Natalia et al., “Development of Ground Truth Data for Automatic Lumbar Spine MRI Image Segmentation,” Proceedings - 20th International Conference on High Performance Computing and Communications, 16th International Conference on Smart City and 4th International Conference on Data Science and Systems, HPCC/SmartCity/DSS 2018, pp. 1449–1454, Jan. 2019, doi: 10.1109/HPCC/SMARTCITY/DSS.2018.00239
